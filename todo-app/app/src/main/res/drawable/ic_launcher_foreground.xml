@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Cot "chua lam" -->
+    <path
+        android:fillColor="#5B9CFF"
+        android:pathData="M35.5,30 A7.5,7.5 0 0 1 43,37.5 V70.5 A7.5,7.5 0 0 1 35.5,78 A7.5,7.5 0 0 1 28,70.5 V37.5 A7.5,7.5 0 0 1 35.5,30 Z" />
+    <!-- Cot "dang lam" -->
+    <path
+        android:fillColor="#F5A524"
+        android:pathData="M54,30 A7.5,7.5 0 0 1 61.5,37.5 V52.5 A7.5,7.5 0 0 1 54,60 A7.5,7.5 0 0 1 46.5,52.5 V37.5 A7.5,7.5 0 0 1 54,30 Z" />
+    <!-- Cot "da lam" -->
+    <path
+        android:fillColor="#2ECC8F"
+        android:pathData="M72.5,30 A7.5,7.5 0 0 1 80,37.5 V62.5 A7.5,7.5 0 0 1 72.5,70 A7.5,7.5 0 0 1 65,62.5 V37.5 A7.5,7.5 0 0 1 72.5,30 Z" />
+</vector>
