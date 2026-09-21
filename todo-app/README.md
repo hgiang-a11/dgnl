@@ -28,10 +28,18 @@ hoặc app quản lý file đang dùng → quay lại và bấm Cài đặt.
 ## Các tính năng
 
 ### Nhiều danh sách công việc
-- Tạo, đổi tên, đổi màu nhãn, nhân bản, sắp xếp lại thứ tự, xoá (có nút **Hoàn tác**).
+- Tạo (nút **+** ở thanh trên cùng), đổi tên, đổi màu nhãn, nhân bản, sắp xếp lại thứ tự,
+  xoá (có nút **Hoàn tác**).
 - Mỗi danh sách hiển thị thanh tiến độ, số việc theo từng trạng thái và số việc quá hạn.
-- Ô tìm kiếm danh sách theo tên.
 - Ba ô thống kê nhanh ở đầu màn hình: tổng việc, đang làm, quá hạn.
+
+### Tìm kiếm tách riêng theo từng màn hình
+Bấm kính lúp là ô tìm kiếm mở ra và bàn phím tự bật lên. Phạm vi tìm bám đúng chỗ bạn đang đứng:
+
+| Đang ở màn hình | Tìm được gì |
+|---|---|
+| Trang chủ | Chỉ tìm **tên các danh sách** |
+| Trong một danh sách | Chỉ tìm **việc của riêng danh sách đó** (theo tên hoặc mô tả) |
 
 ### Bảng 3 mục kéo thả
 - Ba mục cố định: **Chưa làm → Đang làm → Đã làm**.
@@ -55,6 +63,11 @@ theo kiểu đang dùng:
 Ở kiểu **hàng ngang**, ba hàng **tự chia nhau đúng chiều cao màn hình** nên nhìn thấy cả ba mục
 cùng lúc, không phải lướt lên xuống. Hàng nào đang trống thì tự thu nhỏ lại để nhường chỗ cho
 hàng nhiều việc hơn.
+
+Kiểu đang chọn được **ghi nhớ riêng cho từng danh sách** — lần sau mở lại vẫn đúng kiểu đó.
+
+Mục nào chưa có việc thì hiện **một ô duy nhất**, chạm vào là thêm việc luôn. Khi đã có việc rồi
+thì ô đó biến mất, thêm việc bằng dấu **+** ở đầu mục.
 
 ### Công việc
 - Tên việc, mô tả, **ngày bắt đầu** (bỏ trống thì tự lấy ngày tạo việc), **ngày đến hạn** (không bắt buộc).

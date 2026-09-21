@@ -52,6 +52,11 @@ class TaskRepository(context: Context, private val scope: CoroutineScope) {
         return board.id
     }
 
+    /** Ghi nho kieu hien thi (cot doc / hang ngang) rieng cho tung danh sach. */
+    fun setBoardLayout(boardId: String, layout: BoardLayout) {
+        mutate { boards -> boards.map { if (it.id == boardId) it.copy(layout = layout) else it } }
+    }
+
     fun renameBoard(boardId: String, name: String) {
         val clean = name.trim()
         if (clean.isEmpty()) return
@@ -274,6 +279,7 @@ class TaskRepository(context: Context, private val scope: CoroutineScope) {
             bo.put("id", board.id)
             bo.put("name", board.name)
             bo.put("accent", board.accent)
+            bo.put("layout", board.layout.id)
             bo.put("createdAt", board.createdAt)
             val taskArray = JSONArray()
             board.tasks.forEach { task ->
@@ -342,6 +348,7 @@ class TaskRepository(context: Context, private val scope: CoroutineScope) {
                     id = bo.optString("id", java.util.UUID.randomUUID().toString()),
                     name = bo.optString("name", "Danh sách"),
                     accent = bo.optInt("accent", 0),
+                    layout = BoardLayout.from(bo.optString("layout")),
                     createdAt = bo.optLong("createdAt", System.currentTimeMillis()),
                     tasks = tasks
                 )

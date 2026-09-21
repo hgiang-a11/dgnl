@@ -296,11 +296,16 @@ fun TaskCardContent(
 
 /**
  * The cong viec dat trong cot: cham de mo, giu lau de keo sang cot khac.
+ *
+ * Luu y quan trong: khi the nay dang duoc keo, no VAN phai o lai trong danh sach
+ * (chi mo di, tham chieu [ghost]). Neu go no ra khoi giao dien thi bo bat cham keo
+ * bi huy ngay lap tuc va thao tac keo chet giua chung.
  */
 @Composable
 fun DraggableTaskCard(
     task: Task,
     drag: BoardDragState,
+    ghost: Boolean,
     onOpen: () -> Unit,
     onMove: (TaskStatus) -> Unit,
     onCycleStatus: () -> Unit,
@@ -314,9 +319,14 @@ fun DraggableTaskCard(
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.968f else 1f,
+        targetValue = if (pressed && !ghost) 0.968f else 1f,
         animationSpec = spring(dampingRatio = 0.55f, stiffness = 540f),
         label = "cardScale"
+    )
+    val ghostAlpha by animateFloatAsState(
+        targetValue = if (ghost) 0.22f else 1f,
+        animationSpec = tween(160),
+        label = "cardGhost"
     )
 
     DisposableEffect(task.id) {
@@ -329,6 +339,7 @@ fun DraggableTaskCard(
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
+                alpha = ghostAlpha
             }
             .onGloballyPositioned { drag.cardRects[task.id] = it.boundsInRoot() }
             .clip(CardShape)

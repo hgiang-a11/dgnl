@@ -15,6 +15,19 @@ enum class TaskStatus(val id: String, val label: String) {
     }
 }
 
+/** Kieu bay ba muc cong viec tren man hinh bang. Moi danh sach tu nho kieu rieng cua no. */
+enum class BoardLayout(val id: String, val label: String) {
+    /** Ba cot dung canh nhau, vuot ngang de doi cot. */
+    COLUMNS("columns", "Cột dọc"),
+
+    /** Ba hang xep chong, tu chia chieu cao man hinh. */
+    ROWS("rows", "Hàng ngang");
+
+    companion object {
+        fun from(id: String?): BoardLayout = entries.firstOrNull { it.id == id } ?: COLUMNS
+    }
+}
+
 /** Muc do uu tien. */
 enum class Priority(val id: String, val label: String, val level: Int) {
     LOW("low", "Thấp", 0),
@@ -47,6 +60,7 @@ data class Board(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
     val accent: Int = 0,
+    val layout: BoardLayout = BoardLayout.COLUMNS,
     val createdAt: Long = System.currentTimeMillis(),
     val tasks: List<Task> = emptyList()
 )

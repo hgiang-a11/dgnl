@@ -38,7 +38,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,6 +50,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,6 +60,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -102,6 +104,7 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
+    val searchFocus = remember { FocusRequester() }
 
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -171,16 +174,24 @@ fun HomeScreen(
                     Icon(
                         imageVector = if (searchOpen) Icons.Filled.Close else Icons.Filled.Search,
                         contentDescription = "Tìm danh sách",
-                        tint = TextMid
+                        tint = if (searchOpen) accentAt(0) else TextMid
+                    )
+                }
+                IconButton(onClick = { showCreate = true }) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Tạo danh sách mới",
+                        tint = accentAt(0)
                     )
                 }
             }
 
             if (searchOpen) {
+                LaunchedEffect(Unit) { runCatching { searchFocus.requestFocus() } }
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    placeholder = { Text("Tìm danh sách...") },
+                    placeholder = { Text("Tìm danh sách theo tên...") },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     colors = appTextFieldColors(),
@@ -188,9 +199,22 @@ fun HomeScreen(
                     leadingIcon = {
                         Icon(Icons.Filled.Search, null, tint = TextLow, modifier = Modifier.size(18.dp))
                     },
+                    trailingIcon = {
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = { query = "" }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = "Xoá từ khoá",
+                                    tint = TextLow,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 18.dp, vertical = 6.dp)
+                        .focusRequester(searchFocus)
                 )
             }
 
@@ -280,20 +304,6 @@ fun HomeScreen(
                     }
                 }
             }
-        }
-
-        ExtendedFloatingActionButton(
-            onClick = { showCreate = true },
-            containerColor = accentAt(0),
-            contentColor = Color(0xFF05070C),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .navigationBarsPadding()
-                .padding(end = 18.dp, bottom = 18.dp)
-        ) {
-            Icon(Icons.Filled.Add, null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("Danh sách mới", fontWeight = FontWeight.SemiBold)
         }
 
         SnackbarHost(

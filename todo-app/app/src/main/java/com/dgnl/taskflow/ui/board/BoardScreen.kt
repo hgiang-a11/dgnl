@@ -82,6 +82,8 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -95,6 +97,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.dgnl.taskflow.data.Board
+import com.dgnl.taskflow.data.BoardLayout
 import com.dgnl.taskflow.data.Priority
 import com.dgnl.taskflow.data.Task
 import com.dgnl.taskflow.data.TaskRepository
@@ -131,15 +134,6 @@ enum class BoardSort(val label: String) {
     PRIORITY("Mức ưu tiên"),
     NEWEST("Mới tạo trước"),
     TITLE("Tên A → Z")
-}
-
-/** Hai kieu sap xep ba muc cong viec tren man hinh. */
-enum class BoardLayout(val label: String) {
-    /** Ba cot doc canh nhau, vuot ngang de doi cot. */
-    COLUMNS("Cột dọc"),
-
-    /** Ba hang ngang xep chong len nhau, tu chia chieu cao de khong phai luot doc. */
-    ROWS("Hàng ngang")
 }
 
 /**
@@ -179,12 +173,12 @@ fun BoardScreen(
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf(BoardFilter.ALL) }
     var sort by rememberSaveable { mutableStateOf(BoardSort.MANUAL) }
-    var layout by rememberSaveable { mutableStateOf(BoardLayout.COLUMNS) }
 
     var showRename by rememberSaveable { mutableStateOf(false) }
     var showDeleteBoard by rememberSaveable { mutableStateOf(false) }
     var showClearDone by rememberSaveable { mutableStateOf(false) }
 
+    val searchFocus = remember { FocusRequester() }
     val horizontalScroll = rememberScrollState()
     val todoListState = rememberLazyListState()
     val doingListState = rememberLazyListState()
@@ -203,6 +197,7 @@ fun BoardScreen(
         buildColumns(board.tasks, query, filter, sort)
     }
 
+    val layout = board.layout
     val rowsMode = layout == BoardLayout.ROWS
 
     SideEffect {
@@ -292,7 +287,10 @@ fun BoardScreen(
                 sort = sort,
                 layout = layout,
                 onToggleLayout = {
-                    layout = if (layout == BoardLayout.ROWS) BoardLayout.COLUMNS else BoardLayout.ROWS
+                    repository.setBoardLayout(
+                        board.id,
+                        if (rowsMode) BoardLayout.COLUMNS else BoardLayout.ROWS
+                    )
                 },
                 onBack = onBack,
                 onToggleSearch = {
@@ -312,10 +310,11 @@ fun BoardScreen(
             )
 
             if (searchOpen) {
+                LaunchedEffect(Unit) { runCatching { searchFocus.requestFocus() } }
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    placeholder = { Text("Tìm theo tên hoặc mô tả...") },
+                    placeholder = { Text("Tìm việc trong \"${board.name}\"...") },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     colors = appTextFieldColors(),
@@ -333,6 +332,7 @@ fun BoardScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 14.dp, vertical = 4.dp)
+                        .focusRequester(searchFocus)
                 )
             }
 
@@ -855,9 +855,14 @@ private fun BoardLane(
     val shape = RoundedCornerShape(18.dp)
     val draggingId = drag.draggingTask?.id
     val isTarget = draggingId != null && drag.targetStatus == status
-    val visibleTasks = remember(tasks, draggingId) {
-        if (draggingId == null) tasks else tasks.filterNot { it.id == draggingId }
+
+    // The dang duoc keo VAN o lai trong danh sach, chi mo di. Neu go no ra khoi giao dien
+    // thi bo bat cu chi cham bi huy va thao tac keo chet ngay khi vua bat dau.
+    val ghostIndex = remember(tasks, draggingId) {
+        if (draggingId == null) -1 else tasks.indexOfFirst { it.id == draggingId }
     }
+    // So cho that su co the tha vao (khong tinh the dang keo).
+    val slotCount = if (ghostIndex >= 0) tasks.size - 1 else tasks.size
 
     val laneBackground by animateColorAsState(
         targetValue = if (isTarget) accent.copy(alpha = 0.07f) else Surface1,
@@ -905,20 +910,28 @@ private fun BoardLane(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                if (visibleTasks.isEmpty()) {
+                if (tasks.isEmpty()) {
                     item(key = "__empty") {
-                        EmptyLaneHint(isTarget = isTarget, accent = accent, horizontal = true)
+                        EmptyLaneTile(
+                            isTarget = isTarget,
+                            accent = accent,
+                            onAdd = onAdd,
+                            modifier = Modifier.fillParentMaxWidth().fillMaxHeight()
+                        )
                     }
                 }
 
-                itemsIndexed(visibleTasks, key = { _, task -> task.id }) { index, task ->
+                itemsIndexed(tasks, key = { _, task -> task.id }) { index, task ->
+                    val isGhost = index == ghostIndex
+                    val slot = if (ghostIndex in 0 until index) index - 1 else index
                     Row(Modifier.animateItem(), verticalAlignment = Alignment.Top) {
-                        if (isTarget && showIndicator && drag.targetIndex == index) {
+                        if (isTarget && showIndicator && !isGhost && drag.targetIndex == slot) {
                             DropIndicator(accent = accent, horizontal = true)
                         }
                         DraggableTaskCard(
                             task = task,
                             drag = drag,
+                            ghost = isGhost,
                             onOpen = { onOpenTask(task) },
                             onMove = { target -> onMoveTask(task, target) },
                             onCycleStatus = { onCycleTask(task) },
@@ -930,15 +943,8 @@ private fun BoardLane(
                     }
                 }
 
-                if (isTarget && showIndicator && drag.targetIndex >= visibleTasks.size && visibleTasks.isNotEmpty()) {
+                if (isTarget && showIndicator && slotCount > 0 && drag.targetIndex >= slotCount) {
                     item(key = "__tail") { DropIndicator(accent = accent, horizontal = true) }
-                }
-
-                item(key = "__add") {
-                    AddTaskTile(
-                        onClick = onAdd,
-                        modifier = Modifier.width(132.dp).fillMaxHeight()
-                    )
                 }
             }
         } else {
@@ -950,20 +956,28 @@ private fun BoardLane(
                 contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 10.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (visibleTasks.isEmpty()) {
+                if (tasks.isEmpty()) {
                     item(key = "__empty") {
-                        EmptyLaneHint(isTarget = isTarget, accent = accent, horizontal = false)
+                        EmptyLaneTile(
+                            isTarget = isTarget,
+                            accent = accent,
+                            onAdd = onAdd,
+                            modifier = Modifier.fillMaxWidth().height(104.dp)
+                        )
                     }
                 }
 
-                itemsIndexed(visibleTasks, key = { _, task -> task.id }) { index, task ->
+                itemsIndexed(tasks, key = { _, task -> task.id }) { index, task ->
+                    val isGhost = index == ghostIndex
+                    val slot = if (ghostIndex in 0 until index) index - 1 else index
                     Column(Modifier.fillMaxWidth().animateItem()) {
-                        if (isTarget && showIndicator && drag.targetIndex == index) {
+                        if (isTarget && showIndicator && !isGhost && drag.targetIndex == slot) {
                             DropIndicator(accent = accent, horizontal = false)
                         }
                         DraggableTaskCard(
                             task = task,
                             drag = drag,
+                            ghost = isGhost,
                             onOpen = { onOpenTask(task) },
                             onMove = { target -> onMoveTask(task, target) },
                             onCycleStatus = { onCycleTask(task) },
@@ -974,15 +988,8 @@ private fun BoardLane(
                     }
                 }
 
-                if (isTarget && showIndicator && drag.targetIndex >= visibleTasks.size && visibleTasks.isNotEmpty()) {
+                if (isTarget && showIndicator && slotCount > 0 && drag.targetIndex >= slotCount) {
                     item(key = "__tail") { DropIndicator(accent = accent, horizontal = false) }
-                }
-
-                item(key = "__add") {
-                    AddTaskTile(
-                        onClick = onAdd,
-                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
-                    )
                 }
             }
         }
@@ -1055,47 +1062,6 @@ private fun LaneHeader(
     }
 }
 
-/** O "Them viec" o cuoi moi lan — bam duoc that su. */
-@Composable
-private fun AddTaskTile(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(12.dp)
-    val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.96f else 1f,
-        animationSpec = spring(dampingRatio = 0.55f, stiffness = 600f),
-        label = "addTileScale"
-    )
-
-    Box(
-        modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .clip(shape)
-            .border(1.dp, Line, shape)
-            .clickable(
-                interactionSource = interaction,
-                indication = LocalIndication.current,
-                onClick = onClick
-            )
-            .padding(vertical = 11.dp, horizontal = 8.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.Add, null, tint = TextLow, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = "Thêm việc",
-                style = MaterialTheme.typography.labelMedium,
-                color = TextLow,
-                maxLines = 1
-            )
-        }
-    }
-}
-
 @Composable
 private fun DropIndicator(accent: Color, horizontal: Boolean) {
     if (horizontal) {
@@ -1117,8 +1083,17 @@ private fun DropIndicator(accent: Color, horizontal: Boolean) {
     }
 }
 
+/**
+ * O duy nhat hien khi mot muc chua co viec nao: vua la cho bao "trong",
+ * vua la nut them viec, vua la vung tha khi dang keo the toi.
+ */
 @Composable
-private fun EmptyLaneHint(isTarget: Boolean, accent: Color, horizontal: Boolean) {
+private fun EmptyLaneTile(
+    isTarget: Boolean,
+    accent: Color,
+    onAdd: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val shape = RoundedCornerShape(12.dp)
     val background by animateColorAsState(
         targetValue = if (isTarget) accent.copy(alpha = 0.1f) else Color.Transparent,
@@ -1130,30 +1105,46 @@ private fun EmptyLaneHint(isTarget: Boolean, accent: Color, horizontal: Boolean)
         animationSpec = tween(220),
         label = "emptyOutline"
     )
-    val textColor by animateColorAsState(
+    val contentColor by animateColorAsState(
         targetValue = if (isTarget) accent else TextLow,
         animationSpec = tween(220),
         label = "emptyText"
     )
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.975f else 1f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = 600f),
+        label = "emptyScale"
+    )
 
     Box(
-        modifier = Modifier
-            .then(
-                if (horizontal) {
-                    Modifier.width(RowCardWidth).fillMaxHeight()
-                } else {
-                    Modifier.fillMaxWidth().height(96.dp)
-                }
-            )
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(shape)
             .background(background)
-            .border(width = 1.dp, color = outline, shape = shape),
+            .border(width = 1.dp, color = outline, shape = shape)
+            .clickable(
+                interactionSource = interaction,
+                indication = LocalIndication.current,
+                onClick = onAdd
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = if (isTarget) "Thả vào đây" else "Chưa có việc nào",
-            style = MaterialTheme.typography.labelMedium,
-            color = textColor
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (!isTarget) {
+                Icon(Icons.Filled.Add, null, tint = contentColor, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+            }
+            Text(
+                text = if (isTarget) "Thả vào đây" else "Thêm việc",
+                style = MaterialTheme.typography.labelMedium,
+                color = contentColor,
+                maxLines = 1
+            )
+        }
     }
 }
