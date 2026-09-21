@@ -50,8 +50,12 @@ class BoardDragState {
     /** Vung nhin cua bang (dung cho tu dong cuon ngang). */
     var viewport: Rect = Rect.Zero
 
-    /** True khi bang xep 3 hang ngang (the chay ngang), false khi xep 3 cot doc. */
-    var horizontal: Boolean = false
+    /**
+     * True khi ba muc xep chong len nhau theo chieu doc (kieu "hang ngang"),
+     * false khi ba muc dung canh nhau (kieu "cot doc").
+     * Trong ca hai kieu, cac the trong mot muc deu xep doc.
+     */
+    var stackedLanes: Boolean = false
 
     val columnRects = HashMap<TaskStatus, Rect>()
     val cardRects = HashMap<String, Rect>()
@@ -107,8 +111,7 @@ class BoardDragState {
         var lastKnown = -1
         for (i in list.indices) {
             val rect = cardRects[list[i].id] ?: continue
-            val before = if (horizontal) pointer.x < rect.center.x else pointer.y < rect.center.y
-            if (slot == null && before) slot = i
+            if (slot == null && pointer.y < rect.center.y) slot = i
             lastKnown = i
         }
         val resolved = slot ?: if (lastKnown >= 0) lastKnown + 1 else list.size
@@ -122,7 +125,7 @@ class BoardDragState {
         var best: TaskStatus? = null
         var bestDistance = Float.MAX_VALUE
         for ((status, rect) in columnRects) {
-            val distance = if (horizontal) {
+            val distance = if (stackedLanes) {
                 when {
                     pointer.y < rect.top -> rect.top - pointer.y
                     pointer.y > rect.bottom -> pointer.y - rect.bottom

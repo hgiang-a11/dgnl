@@ -1,5 +1,12 @@
 package com.dgnl.taskflow.ui.common
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,7 +41,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -43,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import com.dgnl.taskflow.ui.theme.AccentColors
 import com.dgnl.taskflow.ui.theme.Line
+import com.dgnl.taskflow.ui.theme.StatusDoingColor
 import com.dgnl.taskflow.ui.theme.Surface2
 import com.dgnl.taskflow.ui.theme.Surface3
 import com.dgnl.taskflow.ui.theme.TextHi
@@ -330,6 +343,81 @@ fun EmptyState(
         if (action != null) {
             Spacer(Modifier.height(20.dp))
             action()
+        }
+    }
+}
+
+/**
+ * Thanh tien do ba phan cua mot danh sach, doc tu trai sang:
+ * - **to dac**: viec da xong
+ * - **vach cheo dang chay**: viec dang lam
+ * - **de trong**: viec chua lam
+ *
+ * Do dai moi phan dung bang ti le so viec cua phan do.
+ */
+@Composable
+fun TaskProgressBar(
+    doneRatio: Float,
+    doingRatio: Float,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    val done = animateFloatAsState(
+        targetValue = doneRatio.coerceIn(0f, 1f),
+        animationSpec = tween(460),
+        label = "doneRatio"
+    )
+    val doing = animateFloatAsState(
+        targetValue = doingRatio.coerceIn(0f, 1f),
+        animationSpec = tween(460),
+        label = "doingRatio"
+    )
+    val marching = rememberInfiniteTransition(label = "stripes")
+    val phase = marching.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1100, easing = LinearEasing), RepeatMode.Restart),
+        label = "stripePhase"
+    )
+
+    // Cac gia tri dong duoc doc ben trong buoc ve, nen chi ve lai chu khong dung lai giao dien.
+    Canvas(
+        modifier
+            .height(8.dp)
+            .clip(RoundedCornerShape(50))
+    ) {
+        val barHeight = size.height
+        val doneWidth = size.width * done.value
+        val doingWidth = (size.width * doing.value).coerceAtMost(size.width - doneWidth)
+
+        drawRect(color = Surface3)
+
+        if (doneWidth > 0.5f) {
+            drawRect(color = accent, size = Size(doneWidth, barHeight))
+        }
+
+        if (doingWidth > 0.5f) {
+            val left = doneWidth
+            val right = doneWidth + doingWidth
+            clipRect(left = left, top = 0f, right = right, bottom = barHeight) {
+                drawRect(
+                    color = StatusDoingColor.copy(alpha = 0.22f),
+                    topLeft = Offset(left, 0f),
+                    size = Size(doingWidth, barHeight)
+                )
+                val period = barHeight * 1.7f
+                var x = left - barHeight - phase.value * period
+                while (x < right + barHeight) {
+                    drawLine(
+                        color = StatusDoingColor,
+                        start = Offset(x, barHeight),
+                        end = Offset(x + barHeight, 0f),
+                        strokeWidth = barHeight * 0.4f,
+                        cap = StrokeCap.Round
+                    )
+                    x += period
+                }
+            }
         }
     }
 }

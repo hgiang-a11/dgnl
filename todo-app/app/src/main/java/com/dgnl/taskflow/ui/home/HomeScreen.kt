@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -41,16 +40,13 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,12 +55,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dgnl.taskflow.data.Board
@@ -75,10 +67,12 @@ import com.dgnl.taskflow.data.doneRatio
 import com.dgnl.taskflow.data.isOverdue
 import com.dgnl.taskflow.ui.common.ConfirmDialog
 import com.dgnl.taskflow.ui.common.EmptyState
+import com.dgnl.taskflow.ui.common.SearchHint
+import com.dgnl.taskflow.ui.common.SearchOverlay
 import com.dgnl.taskflow.ui.common.Pill
 import com.dgnl.taskflow.ui.common.StatTile
+import com.dgnl.taskflow.ui.common.TaskProgressBar
 import com.dgnl.taskflow.ui.common.TextPromptDialog
-import com.dgnl.taskflow.ui.common.appTextFieldColors
 import com.dgnl.taskflow.ui.common.formatToday
 import com.dgnl.taskflow.ui.common.todayEpochDay
 import com.dgnl.taskflow.ui.theme.Danger
@@ -88,7 +82,6 @@ import com.dgnl.taskflow.ui.theme.StatusDoingColor
 import com.dgnl.taskflow.ui.theme.StatusDoneColor
 import com.dgnl.taskflow.ui.theme.StatusTodoColor
 import com.dgnl.taskflow.ui.theme.Surface1
-import com.dgnl.taskflow.ui.theme.Surface3
 import com.dgnl.taskflow.ui.theme.TextHi
 import com.dgnl.taskflow.ui.theme.TextLow
 import com.dgnl.taskflow.ui.theme.TextMid
@@ -104,7 +97,6 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
-    val searchFocus = remember { FocusRequester() }
 
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -184,38 +176,6 @@ fun HomeScreen(
                         tint = accentAt(0)
                     )
                 }
-            }
-
-            if (searchOpen) {
-                LaunchedEffect(Unit) { runCatching { searchFocus.requestFocus() } }
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    placeholder = { Text("Tìm danh sách theo tên...") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = appTextFieldColors(),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    leadingIcon = {
-                        Icon(Icons.Filled.Search, null, tint = TextLow, modifier = Modifier.size(18.dp))
-                    },
-                    trailingIcon = {
-                        if (query.isNotEmpty()) {
-                            IconButton(onClick = { query = "" }) {
-                                Icon(
-                                    imageVector = Icons.Filled.Close,
-                                    contentDescription = "Xoá từ khoá",
-                                    tint = TextLow,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 18.dp, vertical = 6.dp)
-                        .focusRequester(searchFocus)
-                )
             }
 
             if (boards.isNotEmpty()) {
@@ -313,6 +273,41 @@ fun HomeScreen(
                 .navigationBarsPadding()
                 .padding(bottom = 14.dp)
         )
+
+        // Man hinh tim kiem: o trang chu chi tim ten cac danh sach.
+        if (searchOpen) {
+            SearchOverlay(
+                placeholder = "Tìm danh sách...",
+                query = query,
+                accent = accentAt(0),
+                onQueryChange = { query = it },
+                onClose = {
+                    searchOpen = false
+                    query = ""
+                }
+            ) {
+                when {
+                    query.isBlank() -> SearchHint("Gõ tên danh sách bạn muốn tìm.")
+                    visibleBoards.isEmpty() -> SearchHint("Không có danh sách nào tên giống \"${query.trim()}\".")
+                    else -> LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 6.dp)
+                    ) {
+                        items(visibleBoards, key = { it.id }) { board ->
+                            BoardSearchRow(
+                                board = board,
+                                today = today,
+                                onOpen = {
+                                    searchOpen = false
+                                    query = ""
+                                    onOpenBoard(board.id)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if (showCreate) {
@@ -478,14 +473,11 @@ private fun BoardCard(
         Spacer(Modifier.height(14.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            LinearProgressIndicator(
-                progress = { ratio },
-                color = accent,
-                trackColor = Surface3,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp))
+            TaskProgressBar(
+                doneRatio = ratio,
+                doingRatio = if (board.tasks.isEmpty()) 0f else doing / board.tasks.size.toFloat(),
+                accent = accent,
+                modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(10.dp))
             Text(
@@ -511,6 +503,50 @@ private fun BoardCard(
         if (overdue > 0) {
             Spacer(Modifier.height(10.dp))
             Pill(text = "$overdue việc quá hạn", color = Danger, filled = true, leadingDot = true)
+        }
+    }
+}
+
+/** Mot dong ket qua khi tim danh sach. */
+@Composable
+private fun BoardSearchRow(
+    board: Board,
+    today: Long,
+    onOpen: () -> Unit
+) {
+    val done = board.countOf(TaskStatus.DONE)
+    val overdue = board.tasks.count { it.isOverdue(today) }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpen)
+            .padding(horizontal = 20.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .size(10.dp)
+                .background(accentAt(board.accent), CircleShape)
+        )
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = board.name,
+                style = MaterialTheme.typography.titleSmall,
+                color = TextHi,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = buildString {
+                    append("${board.tasks.size} việc · $done đã xong")
+                    if (overdue > 0) append(" · $overdue quá hạn")
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = if (overdue > 0) Danger else TextLow,
+                maxLines = 1
+            )
         }
     }
 }

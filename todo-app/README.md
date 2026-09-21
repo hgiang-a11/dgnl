@@ -33,13 +33,26 @@ hoặc app quản lý file đang dùng → quay lại và bấm Cài đặt.
 - Mỗi danh sách hiển thị thanh tiến độ, số việc theo từng trạng thái và số việc quá hạn.
 - Ba ô thống kê nhanh ở đầu màn hình: tổng việc, đang làm, quá hạn.
 
-### Tìm kiếm tách riêng theo từng màn hình
-Bấm kính lúp là ô tìm kiếm mở ra và bàn phím tự bật lên. Phạm vi tìm bám đúng chỗ bạn đang đứng:
+### Tìm kiếm
+Bấm kính lúp là mở ra **một trang tìm kiếm riêng chiếm trọn màn hình** — mũi tên quay lại ở góc
+trái, ô gõ chữ trống trơn không khung viền, bàn phím tự bật lên, kết quả hiện ngay bên dưới.
+Chạm một kết quả là nhảy thẳng tới nó.
+
+Phạm vi tìm bám đúng chỗ bạn đang đứng:
 
 | Đang ở màn hình | Tìm được gì |
 |---|---|
 | Trang chủ | Chỉ tìm **tên các danh sách** |
 | Trong một danh sách | Chỉ tìm **việc của riêng danh sách đó** (theo tên hoặc mô tả) |
+
+### Thanh tiến độ ba phần
+Thanh dưới tên mỗi danh sách ở trang chủ chia đúng theo tỉ lệ số việc:
+
+| Phần | Ý nghĩa |
+|---|---|
+| **Tô đặc** (màu nhãn) | Việc **đã làm** |
+| **Vạch chéo đang chạy** (cam) | Việc **đang làm** |
+| **Để trống** (xám) | Việc **chưa làm** |
 
 ### Bảng 3 mục kéo thả
 - Ba mục cố định: **Chưa làm → Đang làm → Đã làm**.
@@ -57,12 +70,15 @@ theo kiểu đang dùng:
 
 | Kiểu | Cách hiển thị |
 |---|---|
-| **Cột dọc** | Ba cột đứng cạnh nhau, vuốt ngang để đổi cột, việc trong cột cuộn lên xuống |
-| **Hàng ngang** | Ba hàng xếp chồng, việc chạy ngang trong từng hàng |
+| **Cột dọc** | Ba cột đứng cạnh nhau, vuốt ngang để đổi cột |
+| **Hàng ngang** | Ba khối xếp chồng, nhìn thấy cả ba cùng lúc |
 
-Ở kiểu **hàng ngang**, ba hàng **tự chia nhau đúng chiều cao màn hình** nên nhìn thấy cả ba mục
-cùng lúc, không phải lướt lên xuống. Hàng nào đang trống thì tự thu nhỏ lại để nhường chỗ cho
-hàng nhiều việc hơn.
+Ở cả hai kiểu, **việc luôn xếp dọc từ trên xuống** và chiếm trọn bề ngang của khối.
+
+Ở kiểu **hàng ngang**, ba khối **tự chia nhau đúng chiều cao màn hình** nên không phải lướt cả
+trang. Khối nào nhiều việc thì được chia nhiều chiều cao hơn, khối trống chỉ lấy một phần nhỏ.
+Nếu việc trong một khối nhiều quá không hiện hết thì **chính khối đó cuộn lên xuống bên trong**,
+các khối khác vẫn đứng yên.
 
 Kiểu đang chọn được **ghi nhớ riêng cho từng danh sách** — lần sau mở lại vẫn đúng kiểu đó.
 

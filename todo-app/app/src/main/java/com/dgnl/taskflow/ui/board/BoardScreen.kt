@@ -39,13 +39,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -62,7 +61,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -82,8 +80,6 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -92,7 +88,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -105,8 +100,9 @@ import com.dgnl.taskflow.data.TaskStatus
 import com.dgnl.taskflow.data.isDueToday
 import com.dgnl.taskflow.data.isOverdue
 import com.dgnl.taskflow.ui.common.ConfirmDialog
+import com.dgnl.taskflow.ui.common.SearchHint
+import com.dgnl.taskflow.ui.common.SearchOverlay
 import com.dgnl.taskflow.ui.common.TextPromptDialog
-import com.dgnl.taskflow.ui.common.appTextFieldColors
 import com.dgnl.taskflow.ui.common.todayEpochDay
 import com.dgnl.taskflow.ui.theme.Danger
 import com.dgnl.taskflow.ui.theme.Ink
@@ -138,13 +134,16 @@ enum class BoardSort(val label: String) {
 
 /**
  * Chieu cao tuong doi cua moi hang o che do [BoardLayout.ROWS].
- * Hang trong chi can cho hien goi y nen lay it cho, hang nhieu viec duoc rong hon.
+ * Muc cang nhieu viec cang duoc chia nhieu chieu cao; muc trong chi lay mot phan nho.
+ * Ba muc luon cong lai vua dung mot man hinh nen khong phai luot doc toan trang —
+ * muc nao chua het viec thi tu cuon ben trong khoi cua no.
  */
-private fun laneWeight(taskCount: Int): Float = when {
-    taskCount == 0 -> 0.72f
-    taskCount <= 2 -> 1f
-    taskCount <= 5 -> 1.12f
-    else -> 1.24f
+private fun laneWeight(taskCount: Int): Float = when (taskCount) {
+    0 -> 0.55f
+    1 -> 1f
+    2 -> 1.35f
+    3 -> 1.6f
+    else -> 1.85f
 }
 
 /** Do truot can bu khi ngon tay cham sat mep mot vung. */
@@ -178,7 +177,6 @@ fun BoardScreen(
     var showDeleteBoard by rememberSaveable { mutableStateOf(false) }
     var showClearDone by rememberSaveable { mutableStateOf(false) }
 
-    val searchFocus = remember { FocusRequester() }
     val horizontalScroll = rememberScrollState()
     val todoListState = rememberLazyListState()
     val doingListState = rememberLazyListState()
@@ -191,10 +189,22 @@ fun BoardScreen(
         )
     }
 
-    val manualOrder = sort == BoardSort.MANUAL && query.isBlank() && filter == BoardFilter.ALL
+    val manualOrder = sort == BoardSort.MANUAL && filter == BoardFilter.ALL
 
-    val columns = remember(board.tasks, query, filter, sort) {
-        buildColumns(board.tasks, query, filter, sort)
+    val columns = remember(board.tasks, filter, sort) {
+        buildColumns(board.tasks, filter, sort)
+    }
+
+    // Ket qua tim kiem: chi lay viec cua rieng danh sach dang mo.
+    val searchResults = remember(board.tasks, query) {
+        val keyword = query.trim().lowercase()
+        if (keyword.isEmpty()) {
+            emptyList()
+        } else {
+            board.tasks.filter {
+                it.title.lowercase().contains(keyword) || it.note.lowercase().contains(keyword)
+            }
+        }
     }
 
     val layout = board.layout
@@ -202,14 +212,14 @@ fun BoardScreen(
 
     SideEffect {
         drag.resolver = { status -> columns[status].orEmpty() }
-        drag.horizontal = rowsMode
+        drag.stackedLanes = rowsMode
     }
 
     // Tu dong cuon khi keo the ra sat mep man hinh.
     LaunchedEffect(drag.isDragging, rowsMode) {
         if (!drag.isDragging) return@LaunchedEffect
         val edgeX = with(density) { 66.dp.toPx() }
-        val edgeY = with(density) { 88.dp.toPx() }
+        val edgeY = with(density) { (if (rowsMode) 40.dp else 88.dp).toPx() }
         val step = with(density) { 15.dp.toPx() }
         while (true) {
             withFrameNanos { }
@@ -217,22 +227,18 @@ fun BoardScreen(
             val status = drag.targetStatus
             val rect = status?.let { drag.columnRects[it] }
             val listState = status?.let { listStates[it] }
-            if (rowsMode) {
-                // Ba hang deu nam tron trong man hinh: chi can cuon ngang trong hang dang nham toi.
-                if (rect != null && listState != null && rect.width > 1f) {
-                    val dx = edgeScroll(pointer.x, rect.left, rect.right, edgeX, step)
-                    if (dx != 0f) listState.scrollBy(dx)
-                }
-            } else {
+            // Kieu cot doc: keo ra sat mep trai/phai thi ca bang truot sang cot ke tiep.
+            if (!rowsMode) {
                 val viewport = drag.viewport
                 if (viewport.width > 1f) {
                     val dx = edgeScroll(pointer.x, viewport.left, viewport.right, edgeX, step)
                     if (dx != 0f) horizontalScroll.scrollBy(dx)
                 }
-                if (rect != null && listState != null && rect.height > 1f) {
-                    val dy = edgeScroll(pointer.y, rect.top, rect.bottom, edgeY, step)
-                    if (dy != 0f) listState.scrollBy(dy)
-                }
+            }
+            // Ca hai kieu: danh sach viec ben trong mot muc deu cuon doc.
+            if (rect != null && listState != null && rect.height > 1f) {
+                val dy = edgeScroll(pointer.y, rect.top, rect.bottom, edgeY, step)
+                if (dy != 0f) listState.scrollBy(dy)
             }
             drag.refresh()
         }
@@ -309,33 +315,6 @@ fun BoardScreen(
                 onDelete = { showDeleteBoard = true }
             )
 
-            if (searchOpen) {
-                LaunchedEffect(Unit) { runCatching { searchFocus.requestFocus() } }
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    placeholder = { Text("Tìm việc trong \"${board.name}\"...") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = appTextFieldColors(),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    leadingIcon = {
-                        Icon(Icons.Filled.Search, null, tint = TextLow, modifier = Modifier.size(18.dp))
-                    },
-                    trailingIcon = {
-                        if (query.isNotEmpty()) {
-                            IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Filled.Close, "Xoá từ khoá", tint = TextLow, modifier = Modifier.size(18.dp))
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 4.dp)
-                        .focusRequester(searchFocus)
-                )
-            }
-
             FilterRow(
                 current = filter,
                 accent = accent,
@@ -378,7 +357,7 @@ fun BoardScreen(
                                 drag = drag,
                                 listState = listStates.getValue(status),
                                 showIndicator = manualOrder,
-                                horizontal = true,
+                                compactLane = true,
                                 onAdd = { onCreateTask(status) },
                                 onOpenTask = onOpenTask,
                                 onMoveTask = { task, target ->
@@ -410,7 +389,7 @@ fun BoardScreen(
                                 drag = drag,
                                 listState = listStates.getValue(status),
                                 showIndicator = manualOrder,
-                                horizontal = false,
+                                compactLane = false,
                                 onAdd = { onCreateTask(status) },
                                 onOpenTask = onOpenTask,
                                 onMoveTask = { task, target ->
@@ -473,6 +452,40 @@ fun BoardScreen(
                 .navigationBarsPadding()
                 .padding(bottom = 14.dp)
         )
+
+        // Man hinh tim kiem: chi tim viec cua rieng danh sach dang mo.
+        if (searchOpen) {
+            SearchOverlay(
+                placeholder = "Tìm việc trong \"${board.name}\"...",
+                query = query,
+                accent = accent,
+                onQueryChange = { query = it },
+                onClose = {
+                    searchOpen = false
+                    query = ""
+                }
+            ) {
+                when {
+                    query.isBlank() -> SearchHint("Gõ tên hoặc mô tả công việc bạn muốn tìm.")
+                    searchResults.isEmpty() -> SearchHint("Không có việc nào khớp với \"${query.trim()}\".")
+                    else -> LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 6.dp)
+                    ) {
+                        items(searchResults, key = { it.id }) { task ->
+                            TaskSearchRow(
+                                task = task,
+                                onOpen = {
+                                    searchOpen = false
+                                    query = ""
+                                    onOpenTask(task)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if (showRename) {
@@ -531,24 +544,18 @@ fun BoardScreen(
 /** Loc + sap xep, tra ve ba cot da san sang hien thi. */
 private fun buildColumns(
     tasks: List<Task>,
-    query: String,
     filter: BoardFilter,
     sort: BoardSort
 ): Map<TaskStatus, List<Task>> {
     val today = todayEpochDay()
-    val keyword = query.trim().lowercase()
 
     val filtered = tasks.filter { task ->
-        val matchesKeyword = keyword.isEmpty() ||
-            task.title.lowercase().contains(keyword) ||
-            task.note.lowercase().contains(keyword)
-        val matchesFilter = when (filter) {
+        when (filter) {
             BoardFilter.ALL -> true
             BoardFilter.TODAY -> task.isDueToday(today) || task.startDate == today
             BoardFilter.OVERDUE -> task.isOverdue(today)
             BoardFilter.IMPORTANT -> task.priority.level >= Priority.HIGH.level
         }
-        matchesKeyword && matchesFilter
     }
 
     val comparator: Comparator<Task>? = when (sort) {
@@ -831,9 +838,6 @@ private fun FilterChip(
     }
 }
 
-/** Be rong co dinh cua the khi bang o che do hang ngang. */
-private val RowCardWidth = 212.dp
-
 @Composable
 private fun BoardLane(
     status: TaskStatus,
@@ -842,7 +846,7 @@ private fun BoardLane(
     drag: BoardDragState,
     listState: LazyListState,
     showIndicator: Boolean,
-    horizontal: Boolean,
+    compactLane: Boolean,
     onAdd: () -> Unit,
     onOpenTask: (Task) -> Unit,
     onMoveTask: (Task, TaskStatus) -> Unit,
@@ -880,7 +884,7 @@ private fun BoardLane(
         label = "laneOutlineWidth"
     )
 
-    DisposableEffect(status, horizontal) {
+    DisposableEffect(status, compactLane) {
         onDispose { drag.columnRects.remove(status) }
     }
 
@@ -894,103 +898,61 @@ private fun BoardLane(
         LaneHeader(
             status = status,
             count = tasks.size,
-            compact = horizontal,
+            compact = compactLane,
             onAdd = onAdd
         )
 
         HorizontalDivider(color = Line)
 
-        if (horizontal) {
-            LazyRow(
-                state = listState,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                if (tasks.isEmpty()) {
-                    item(key = "__empty") {
-                        EmptyLaneTile(
-                            isTarget = isTarget,
-                            accent = accent,
-                            onAdd = onAdd,
-                            modifier = Modifier.fillParentMaxWidth().fillMaxHeight()
-                        )
-                    }
-                }
-
-                itemsIndexed(tasks, key = { _, task -> task.id }) { index, task ->
-                    val isGhost = index == ghostIndex
-                    val slot = if (ghostIndex in 0 until index) index - 1 else index
-                    Row(Modifier.animateItem(), verticalAlignment = Alignment.Top) {
-                        if (isTarget && showIndicator && !isGhost && drag.targetIndex == slot) {
-                            DropIndicator(accent = accent, horizontal = true)
-                        }
-                        DraggableTaskCard(
-                            task = task,
-                            drag = drag,
-                            ghost = isGhost,
-                            onOpen = { onOpenTask(task) },
-                            onMove = { target -> onMoveTask(task, target) },
-                            onCycleStatus = { onCycleTask(task) },
-                            onDuplicate = { onDuplicateTask(task) },
-                            onDelete = { onDeleteTask(task) },
-                            onDropped = onDropped,
-                            modifier = Modifier.width(RowCardWidth)
-                        )
-                    }
-                }
-
-                if (isTarget && showIndicator && slotCount > 0 && drag.targetIndex >= slotCount) {
-                    item(key = "__tail") { DropIndicator(accent = accent, horizontal = true) }
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentPadding = PaddingValues(
+                start = 10.dp,
+                end = 10.dp,
+                top = if (compactLane) 8.dp else 10.dp,
+                bottom = if (compactLane) 10.dp else 12.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (tasks.isEmpty()) {
+                item(key = "__empty") {
+                    EmptyLaneTile(
+                        isTarget = isTarget,
+                        accent = accent,
+                        onAdd = onAdd,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(if (compactLane) 64.dp else 104.dp)
+                    )
                 }
             }
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 10.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (tasks.isEmpty()) {
-                    item(key = "__empty") {
-                        EmptyLaneTile(
-                            isTarget = isTarget,
-                            accent = accent,
-                            onAdd = onAdd,
-                            modifier = Modifier.fillMaxWidth().height(104.dp)
-                        )
-                    }
-                }
 
-                itemsIndexed(tasks, key = { _, task -> task.id }) { index, task ->
-                    val isGhost = index == ghostIndex
-                    val slot = if (ghostIndex in 0 until index) index - 1 else index
-                    Column(Modifier.fillMaxWidth().animateItem()) {
-                        if (isTarget && showIndicator && !isGhost && drag.targetIndex == slot) {
-                            DropIndicator(accent = accent, horizontal = false)
-                        }
-                        DraggableTaskCard(
-                            task = task,
-                            drag = drag,
-                            ghost = isGhost,
-                            onOpen = { onOpenTask(task) },
-                            onMove = { target -> onMoveTask(task, target) },
-                            onCycleStatus = { onCycleTask(task) },
-                            onDuplicate = { onDuplicateTask(task) },
-                            onDelete = { onDeleteTask(task) },
-                            onDropped = onDropped
-                        )
+            itemsIndexed(tasks, key = { _, task -> task.id }) { index, task ->
+                val isGhost = index == ghostIndex
+                val slot = if (ghostIndex in 0 until index) index - 1 else index
+                Column(Modifier.fillMaxWidth().animateItem()) {
+                    if (isTarget && showIndicator && !isGhost && drag.targetIndex == slot) {
+                        DropIndicator(accent)
                     }
+                    DraggableTaskCard(
+                        task = task,
+                        drag = drag,
+                        ghost = isGhost,
+                        onOpen = { onOpenTask(task) },
+                        onMove = { target -> onMoveTask(task, target) },
+                        onCycleStatus = { onCycleTask(task) },
+                        onDuplicate = { onDuplicateTask(task) },
+                        onDelete = { onDeleteTask(task) },
+                        onDropped = onDropped
+                    )
                 }
+            }
 
-                if (isTarget && showIndicator && slotCount > 0 && drag.targetIndex >= slotCount) {
-                    item(key = "__tail") { DropIndicator(accent = accent, horizontal = false) }
-                }
+            if (isTarget && showIndicator && slotCount > 0 && drag.targetIndex >= slotCount) {
+                item(key = "__tail") { DropIndicator(accent) }
             }
         }
     }
@@ -1063,24 +1025,14 @@ private fun LaneHeader(
 }
 
 @Composable
-private fun DropIndicator(accent: Color, horizontal: Boolean) {
-    if (horizontal) {
-        Box(
-            Modifier
-                .padding(horizontal = 3.dp)
-                .width(3.dp)
-                .height(58.dp)
-                .background(accent, RoundedCornerShape(2.dp))
-        )
-    } else {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp)
-                .height(3.dp)
-                .background(accent, RoundedCornerShape(2.dp))
-        )
-    }
+private fun DropIndicator(accent: Color) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .height(3.dp)
+            .background(accent, RoundedCornerShape(2.dp))
+    )
 }
 
 /**
@@ -1144,6 +1096,48 @@ private fun EmptyLaneTile(
                 style = MaterialTheme.typography.labelMedium,
                 color = contentColor,
                 maxLines = 1
+            )
+        }
+    }
+}
+
+/** Mot dong ket qua khi tim viec trong danh sach dang mo. */
+@Composable
+private fun TaskSearchRow(task: Task, onOpen: () -> Unit) {
+    val today = todayEpochDay()
+    val overdue = task.isOverdue(today)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpen)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .size(9.dp)
+                .background(statusColor(task.status), CircleShape)
+        )
+        Spacer(Modifier.width(13.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = task.title.ifBlank { "(Chưa đặt tên)" },
+                style = MaterialTheme.typography.titleSmall,
+                color = TextHi,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = buildString {
+                    append(task.status.label)
+                    if (task.note.isNotBlank()) append(" · ${task.note}")
+                    if (overdue) append(" · quá hạn")
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = if (overdue) Danger else TextLow,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
