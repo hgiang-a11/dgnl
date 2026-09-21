@@ -33,14 +33,28 @@ hoặc app quản lý file đang dùng → quay lại và bấm Cài đặt.
 - Ô tìm kiếm danh sách theo tên.
 - Ba ô thống kê nhanh ở đầu màn hình: tổng việc, đang làm, quá hạn.
 
-### Bảng 3 cột kéo thả
-- Ba cột cố định: **Chưa làm → Đang làm → Đã làm**.
-- **Giữ ngón tay lên một thẻ khoảng nửa giây** rồi kéo: thẻ nhấc lên bay theo tay, cột đích sáng
+### Bảng 3 mục kéo thả
+- Ba mục cố định: **Chưa làm → Đang làm → Đã làm**.
+- **Giữ ngón tay lên một thẻ khoảng nửa giây** rồi kéo: thẻ nhấc lên bay theo tay, mục đích sáng
   viền, có vạch màu chỉ đúng chỗ thẻ sẽ rơi vào.
-- Kéo ra sát mép trái/phải màn hình thì bảng **tự trượt** sang cột kế tiếp; kéo lên/xuống sát mép
-  cột thì danh sách trong cột tự cuộn.
-- Không thích kéo thì bấm dấu **⋮** trên thẻ để chuyển trạng thái bằng menu.
-- Thả trong cùng một cột để đổi thứ tự các việc.
+- Kéo ra sát mép thì bảng **tự trượt** để đi tiếp.
+- **Chạm vào vòng tròn bên trái thẻ** là đổi trạng thái ngay tại chỗ
+  (Chưa làm → Đang làm → Đã làm → quay lại Chưa làm), không cần mở ra sửa rồi lưu.
+- Hoặc bấm dấu **⋮** trên thẻ để chọn thẳng trạng thái muốn chuyển sang.
+- Thả trong cùng một mục để đổi thứ tự các việc.
+
+### Hai kiểu giao diện, đổi bằng một nút
+Nút ba vạch ở thanh trên cùng (cạnh kính lúp) đổi qua lại giữa hai kiểu — biểu tượng xoay 90 độ
+theo kiểu đang dùng:
+
+| Kiểu | Cách hiển thị |
+|---|---|
+| **Cột dọc** | Ba cột đứng cạnh nhau, vuốt ngang để đổi cột, việc trong cột cuộn lên xuống |
+| **Hàng ngang** | Ba hàng xếp chồng, việc chạy ngang trong từng hàng |
+
+Ở kiểu **hàng ngang**, ba hàng **tự chia nhau đúng chiều cao màn hình** nên nhìn thấy cả ba mục
+cùng lúc, không phải lướt lên xuống. Hàng nào đang trống thì tự thu nhỏ lại để nhường chỗ cho
+hàng nhiều việc hơn.
 
 ### Công việc
 - Tên việc, mô tả, **ngày bắt đầu** (bỏ trống thì tự lấy ngày tạo việc), **ngày đến hạn** (không bắt buộc).
@@ -65,6 +79,7 @@ hoặc app quản lý file đang dùng → quay lại và bấm Cài đặt.
 | Dữ liệu nằm sẵn trong bộ nhớ, ghi file ở luồng nền | Giao diện không bao giờ phải đợi đọc/ghi ổ cứng |
 | Dùng `LazyColumn` (chỉ dựng những thẻ đang nhìn thấy) | Danh sách vài trăm việc vẫn cuộn êm |
 | Lúc kéo thả, vị trí ngón tay chỉ được đọc ở bước đo đạc | Không vẽ lại toàn màn hình 60 lần mỗi giây |
+| Hiệu ứng chạy bằng `graphicsLayer` (lớp vẽ riêng) | Thẻ phóng to/thu nhỏ mà không phải đo lại bố cục |
 | Bản release bật rút gọn mã và tài nguyên (R8) | File APK nhỏ, khởi động nhanh hơn |
 | Không dùng thư viện nặng | Chỉ Compose + thư viện chuẩn của Android |
 

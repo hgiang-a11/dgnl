@@ -50,6 +50,9 @@ class BoardDragState {
     /** Vung nhin cua bang (dung cho tu dong cuon ngang). */
     var viewport: Rect = Rect.Zero
 
+    /** True khi bang xep 3 hang ngang (the chay ngang), false khi xep 3 cot doc. */
+    var horizontal: Boolean = false
+
     val columnRects = HashMap<TaskStatus, Rect>()
     val cardRects = HashMap<String, Rect>()
 
@@ -93,7 +96,7 @@ class BoardDragState {
 
     private fun recomputeTarget() {
         val task = draggingTask ?: return
-        val status = nearestColumn(pointer.x)
+        val status = nearestLane()
         if (status == null) {
             targetStatus = null
             targetIndex = -1
@@ -104,7 +107,8 @@ class BoardDragState {
         var lastKnown = -1
         for (i in list.indices) {
             val rect = cardRects[list[i].id] ?: continue
-            if (slot == null && pointer.y < rect.center.y) slot = i
+            val before = if (horizontal) pointer.x < rect.center.x else pointer.y < rect.center.y
+            if (slot == null && before) slot = i
             lastKnown = i
         }
         val resolved = slot ?: if (lastKnown >= 0) lastKnown + 1 else list.size
@@ -112,16 +116,24 @@ class BoardDragState {
         targetIndex = resolved.coerceIn(0, list.size)
     }
 
-    /** Cot gan ngon tay nhat theo chieu ngang. */
-    private fun nearestColumn(x: Float): TaskStatus? {
+    /** Cot (hoac hang) gan ngon tay nhat theo truc chinh cua bo cuc dang dung. */
+    private fun nearestLane(): TaskStatus? {
         if (columnRects.isEmpty()) return null
         var best: TaskStatus? = null
         var bestDistance = Float.MAX_VALUE
         for ((status, rect) in columnRects) {
-            val distance = when {
-                x < rect.left -> rect.left - x
-                x > rect.right -> x - rect.right
-                else -> 0f
+            val distance = if (horizontal) {
+                when {
+                    pointer.y < rect.top -> rect.top - pointer.y
+                    pointer.y > rect.bottom -> pointer.y - rect.bottom
+                    else -> 0f
+                }
+            } else {
+                when {
+                    pointer.x < rect.left -> rect.left - pointer.x
+                    pointer.x > rect.right -> pointer.x - rect.right
+                    else -> 0f
+                }
             }
             if (distance < bestDistance) {
                 bestDistance = distance
