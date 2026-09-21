@@ -69,6 +69,7 @@ import com.dgnl.taskflow.ui.theme.TextHi
 import com.dgnl.taskflow.ui.theme.TextLow
 import com.dgnl.taskflow.ui.theme.TextMid
 import com.dgnl.taskflow.ui.theme.Warn
+import kotlin.math.roundToInt
 
 fun priorityColor(priority: Priority): Color = when (priority) {
     Priority.LOW -> Color(0xFF5C6B7F)
