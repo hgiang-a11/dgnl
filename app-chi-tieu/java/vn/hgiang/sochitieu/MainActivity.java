@@ -3,9 +3,11 @@ package vn.hgiang.sochitieu;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.Window;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
@@ -26,8 +28,8 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Màn hình duy nhất của Sổ chi tiêu: một khung web hiện giao diện trong thư mục
- * assets, cộng một cầu nối để giao diện đọc ghi dữ liệu vào bộ nhớ riêng của app
- * và lưu file ra ngoài (sao lưu, xuất bảng tính).
+ * assets, cộng một cầu nối để giao diện đọc ghi dữ liệu vào bộ nhớ riêng của app,
+ * lưu file ra ngoài (Excel, JSON) và đổi màu thanh trạng thái theo màu giao diện.
  */
 public class MainActivity extends Activity {
 
@@ -38,12 +40,15 @@ public class MainActivity extends Activity {
     private static final String FILE_DU_LIEU = "so_chi_tieu.json";
     private static final String FILE_BAN_TRUOC = "so_chi_tieu.truoc.json";
     private static final String FILE_TAM = "so_chi_tieu.tam";
+    private static final String CAI_DAT = "cai_dat";
+    private static final String MAU_THANH = "mau_thanh";
+    private static final int MAU_MAC_DINH = 0xFF1F3864;
 
     private final Object khoaFile = new Object();
 
     private WebView web;
     private ValueCallback<Uri[]> choChonFile;
-    private String noiDungChoLuu;
+    private byte[] noiDungChoLuu;
 
     @Override
     protected void onCreate(Bundle trangThai) {
@@ -98,16 +103,17 @@ public class MainActivity extends Activity {
         web.loadUrl(TRANG_CHINH);
     }
 
-    /** Thanh trạng thái màu xanh đậm như dải tiêu đề, thanh điều hướng màu trắng */
+    /** Thanh trạng thái theo màu giao diện đã chọn lần trước, thanh điều hướng màu trắng */
     private void toMauThanhHeThong() {
         Window w = getWindow();
-        w.setStatusBarColor(0xFF1F3864);
+        int mau = getSharedPreferences(CAI_DAT, MODE_PRIVATE).getInt(MAU_THANH, MAU_MAC_DINH);
+        w.setStatusBarColor(mau);
         if (Build.VERSION.SDK_INT >= 26) {
             w.setNavigationBarColor(0xFFFFFFFF);
             // 0x10 là SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR: nút điều hướng màu tối trên nền trắng
             w.getDecorView().setSystemUiVisibility(0x10);
         } else {
-            w.setNavigationBarColor(0xFF1F3864);
+            w.setNavigationBarColor(mau);
         }
     }
 
@@ -170,12 +176,12 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 
-    private boolean ghiRaUri(Uri uri, String noiDung) {
+    private boolean ghiRaUri(Uri uri, byte[] noiDung) {
         OutputStream ra = null;
         try {
             ra = getContentResolver().openOutputStream(uri, "w");
             if (ra == null) return false;
-            ra.write(noiDung.getBytes(StandardCharsets.UTF_8));
+            ra.write(noiDung);
             ra.flush();
             return true;
         } catch (IOException | SecurityException e) {
@@ -193,6 +199,26 @@ public class MainActivity extends Activity {
             while ((n = vao.read(dem)) > 0) gom.write(dem, 0, n);
             return new String(gom.toByteArray(), StandardCharsets.UTF_8);
         }
+    }
+
+    /** Mở hộp chọn chỗ lưu của Android, lưu xong báo lại qua window.daLuuFile */
+    private void chonChoLuu(final String ten, final String loai, final byte[] noiDung) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                noiDungChoLuu = noiDung;
+                Intent luu = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                luu.addCategory(Intent.CATEGORY_OPENABLE);
+                luu.setType(loai);
+                luu.putExtra(Intent.EXTRA_TITLE, ten);
+                try {
+                    startActivityForResult(luu, MA_LUU_FILE);
+                } catch (ActivityNotFoundException e) {
+                    noiDungChoLuu = null;
+                    web.evaluateJavascript("window.daLuuFile && window.daLuuFile('loi')", null);
+                }
+            }
+        });
     }
 
     private static void dong(Closeable c) {
@@ -251,23 +277,45 @@ public class MainActivity extends Activity {
             }
         }
 
-        /** Mở hộp chọn chỗ lưu của Android, lưu xong báo lại qua window.daLuuFile */
+        /** Lưu file chữ, ví dụ file JSON */
         @JavascriptInterface
-        public void luuFile(final String ten, final String loai, final String noiDung) {
+        public void luuFile(String ten, String loai, String noiDung) {
+            chonChoLuu(ten, loai, noiDung.getBytes(StandardCharsets.UTF_8));
+        }
+
+        /** Lưu file nhị phân gửi sang dưới dạng base64, ví dụ file Excel */
+        @JavascriptInterface
+        public void luuFileBase64(String ten, String loai, String base64) {
+            byte[] noiDung;
+            try {
+                noiDung = Base64.decode(base64, Base64.DEFAULT);
+            } catch (IllegalArgumentException e) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        web.evaluateJavascript("window.daLuuFile && window.daLuuFile('loi')", null);
+                    }
+                });
+                return;
+            }
+            chonChoLuu(ten, loai, noiDung);
+        }
+
+        /** Đổi màu thanh trạng thái theo màu giao diện và nhớ cho lần mở sau */
+        @JavascriptInterface
+        public void doiMauThanh(String ma) {
+            final int mau;
+            try {
+                mau = Color.parseColor(ma);
+            } catch (IllegalArgumentException e) {
+                return;
+            }
+            getSharedPreferences(CAI_DAT, MODE_PRIVATE).edit().putInt(MAU_THANH, mau).apply();
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    noiDungChoLuu = noiDung;
-                    Intent luu = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-                    luu.addCategory(Intent.CATEGORY_OPENABLE);
-                    luu.setType(loai);
-                    luu.putExtra(Intent.EXTRA_TITLE, ten);
-                    try {
-                        startActivityForResult(luu, MA_LUU_FILE);
-                    } catch (ActivityNotFoundException e) {
-                        noiDungChoLuu = null;
-                        web.evaluateJavascript("window.daLuuFile && window.daLuuFile('loi')", null);
-                    }
+                    getWindow().setStatusBarColor(mau);
+                    if (Build.VERSION.SDK_INT < 26) getWindow().setNavigationBarColor(mau);
                 }
             });
         }

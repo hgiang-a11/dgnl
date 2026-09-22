@@ -13,27 +13,14 @@
 
   <!-- ========== TRANG NGÀY ========== -->
   <section id="trangNgay" class="trang" aria-label="Trang ngày">
-    <h1 class="tieu-de-so">SỔ CHI TIÊU HẰNG NGÀY</h1>
-
-    <div class="dai-ngay">
+    <div class="dai-ngay" id="daiNgay">
       <button type="button" class="nut-mui-ten" id="ngayTruoc" aria-label="Ngày trước">‹</button>
       <label class="o-ngay">
+        <span class="nhan-hom-nay" id="nhanHomNay">HÔM NAY</span>
         <span id="nhanNgay"></span>
         <input type="date" id="chonNgay" aria-label="Chọn ngày">
       </label>
       <button type="button" class="nut-mui-ten" id="ngaySau" aria-label="Ngày sau">›</button>
-    </div>
-    <div class="hang-giua">
-      <button type="button" class="nut-vien" id="veHomNay" hidden>Về hôm nay</button>
-    </div>
-
-    <div class="tong-quan">
-      <div class="tong-quan-dau">TỔNG QUAN TRONG NGÀY</div>
-      <div class="luoi-tong">
-        <div class="the-tong"><span class="nhan">TỔNG THU</span><span class="so thu" id="ngayThu">0 đ</span></div>
-        <div class="the-tong"><span class="nhan">TỔNG CHI</span><span class="so chi" id="ngayChi">0 đ</span></div>
-        <div class="the-tong so-du" id="theNgayDu"><span class="nhan">SỐ DƯ</span><span class="so" id="ngayDu">0 đ</span></div>
-      </div>
     </div>
 
     <div class="bang">
@@ -47,119 +34,114 @@
 
   <!-- ========== TỔNG HỢP ========== -->
   <section id="trangTongHop" class="trang" aria-label="Tổng hợp" hidden>
-    <h1 class="tieu-de-so">TỔNG HỢP CHI TIÊU</h1>
-
-    <div class="the dieu-khien">
-      <div class="dong-dk">
-        <span class="nhan-dk">KỲ XEM</span>
-        <div class="nhom-chon" id="chonKy" role="radiogroup" aria-label="Kỳ xem">
-          <button type="button" data-gia-tri="Ngày">Ngày</button>
-          <button type="button" data-gia-tri="Tuần">Tuần</button>
-          <button type="button" data-gia-tri="Tháng">Tháng</button>
-          <button type="button" data-gia-tri="Năm">Năm</button>
-        </div>
-      </div>
-      <div class="dong-dk">
-        <span class="nhan-dk">MỐC NGÀY</span>
-        <div class="dieu-huong-moc">
-          <button type="button" class="nut-mui-ten nho" id="mocTruoc" aria-label="Kỳ trước">‹</button>
-          <label class="o-ngay">
-            <span id="nhanMoc"></span>
-            <input type="date" id="chonMoc" aria-label="Chọn mốc ngày">
-          </label>
-          <button type="button" class="nut-mui-ten nho" id="mocSau" aria-label="Kỳ sau">›</button>
-        </div>
-      </div>
-      <div class="dong-dk">
-        <span class="nhan-dk">BIỂU ĐỒ</span>
-        <div class="nhom-chon" id="chonBieuDo" role="radiogroup" aria-label="Kiểu biểu đồ">
-          <button type="button" data-gia-tri="Cột đôi">Cột đôi</button>
-          <button type="button" data-gia-tri="Tròn chi">Tròn chi</button>
-          <button type="button" data-gia-tri="Tròn thu">Tròn thu</button>
-        </div>
+    <div class="dau-trang">
+      <h1>Tình hình thu chi</h1>
+      <button type="button" class="nut-mat" id="nutAnSo" aria-label="Ẩn hoặc hiện số tiền">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="gach-mat" d="M4 4l16 16"/></svg>
+      </button>
+      <div class="chon-che-do" id="chonCheDo" role="radiogroup" aria-label="Kiểu biểu đồ">
+        <button type="button" data-che-do="tron" role="radio">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>
+          <span>Phân bổ</span>
+        </button>
+        <button type="button" data-che-do="cot" role="radio" aria-label="Biểu đồ cột thu chi">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20V10M12 20V4M18 20v-7"/></svg>
+        </button>
       </div>
     </div>
 
-    <div class="dai-mo-ta" id="moTaKy"></div>
+    <div class="the the-ky">
+      <div class="dieu-huong-ky">
+        <button type="button" class="nut-mui-ten nho" id="kyTruoc" aria-label="Kỳ trước">‹</button>
+        <button type="button" class="nut-ky" id="nutKy">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>
+          <span class="chu-ky"><b id="nhanKy"></b><small id="phuKy"></small></span>
+        </button>
+        <button type="button" class="nut-mui-ten nho" id="kySau" aria-label="Kỳ sau">›</button>
+      </div>
 
-    <div class="tong-quan">
-      <div class="luoi-tong">
-        <div class="the-tong"><span class="nhan">TỔNG THU</span><span class="so thu" id="thThu">0 đ</span></div>
-        <div class="the-tong"><span class="nhan">TỔNG CHI</span><span class="so chi" id="thChi">0 đ</span></div>
-        <div class="the-tong so-du" id="theThDu"><span class="nhan">SỐ DƯ</span><span class="so" id="thDu">0 đ</span></div>
+      <div class="hai-o">
+        <button type="button" class="o-tong chi" data-loai="Chi">
+          <span class="dong-nhan">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 15l6-6M10 9h5v5"/></svg>
+            Chi tiêu
+          </span>
+          <b id="soChi">0 đ</b>
+        </button>
+        <button type="button" class="o-tong thu" data-loai="Thu">
+          <span class="dong-nhan">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M14 15H9v-5"/></svg>
+            Thu nhập
+          </span>
+          <b id="soThu">0 đ</b>
+        </button>
+      </div>
+
+      <div class="dong-so-du">
+        <span>Số dư trong kỳ</span>
+        <b id="soDu">0 đ</b>
+      </div>
+
+      <div class="so-sanh" id="soSanh">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="17" y="10" width="4" height="10" rx="1"/></svg>
+        <span id="chuSoSanh"></span>
       </div>
     </div>
 
     <div class="the the-bieu-do">
-      <h2 class="tieu-de-bd" id="tieuDeBD"></h2>
-      <div class="chu-giai" id="chuGiaiBD"></div>
-      <div class="doc-so" id="docSoBD" aria-live="polite"></div>
-      <div class="khung-bd" id="khungBD"></div>
-      <div id="bangSoBD"></div>
-    </div>
+      <div id="khungTron">
+        <div class="khung-bd" id="khungBDTron"></div>
+      </div>
+      <div id="khungCot" hidden>
+        <h2 class="tieu-de-bd" id="tieuDeCot"></h2>
+        <div class="chu-giai" id="chuGiaiCot"></div>
+        <div class="doc-so" id="docSoCot" aria-live="polite"></div>
+        <div class="khung-bd" id="khungBDCot"></div>
+        <div id="bangSoCot"></div>
+      </div>
 
-    <div class="bang">
-      <table class="bang-hm" id="bangHangMuc">
-        <thead>
-          <tr><th>HẠNG MỤC</th><th class="phai">THU</th><th class="phai">CHI</th></tr>
-        </thead>
-        <tbody id="dsHangMuc"></tbody>
-      </table>
-      <p class="trong" id="trongHangMuc">Chưa có khoản nào trong kỳ này.</p>
+      <h2 class="tieu-de-ds" id="tieuDeDs"></h2>
+      <div class="ds-hang-muc" id="dsHangMuc"></div>
+      <p class="trong" id="trongHangMuc" hidden></p>
     </div>
   </section>
 
-  <!-- ========== SỔ CÁI ========== -->
-  <section id="trangSoCai" class="trang" aria-label="Sổ cái" hidden>
-    <h1 class="tieu-de-so">SỔ CÁI</h1>
+  <!-- ========== CÀI ĐẶT ========== -->
+  <section id="trangCaiDat" class="trang" aria-label="Cài đặt" hidden>
+    <div class="dau-trang"><h1>Cài đặt</h1></div>
 
-    <div class="thanh-tim">
-      <input type="search" id="oTim" placeholder="Tìm hạng mục, ghi chú, số tiền" autocomplete="off" aria-label="Tìm kiếm">
-    </div>
-    <div class="nhom-chon rong" id="locLoai" role="radiogroup" aria-label="Lọc theo loại">
-      <button type="button" data-gia-tri="Tất cả">Tất cả</button>
-      <button type="button" data-gia-tri="Thu">Thu</button>
-      <button type="button" data-gia-tri="Chi">Chi</button>
+    <div class="the">
+      <h2 class="tieu-de-muc">Màu giao diện</h2>
+      <div class="luoi-mau" id="luoiMau" role="radiogroup" aria-label="Màu giao diện"></div>
     </div>
 
-    <p class="tom-tat" id="tomTatSoCai"></p>
-    <div id="dsSoCai"></div>
-    <div class="hang-giua">
-      <button type="button" class="nut-vien" id="xemThem" hidden>Xem thêm</button>
+    <div class="the">
+      <h2 class="tieu-de-muc">Dữ liệu</h2>
+      <p class="chu-nho" id="thongTinKho"></p>
+
+      <button type="button" class="muc-cai-dat" id="nutXuatExcel">
+        <span class="bieu-tuong-muc">📊</span>
+        <span><b>Xuất file Excel</b>
+          <small>File .xlsx mở bằng Excel hoặc Google Trang tính. Trang SO_CAI có các cột NGÀY, GIỜ, LOẠI,
+            HẠNG MỤC, SỐ TIỀN, GHI CHÚ; trang TONG_HOP có tổng thu chi từng tháng.</small></span>
+      </button>
+      <button type="button" class="muc-cai-dat" id="nutXuatJson">
+        <span class="bieu-tuong-muc">💾</span>
+        <span><b>Xuất file JSON</b>
+          <small>File .json để nhập lại vào app, ví dụ khi đổi điện thoại hoặc cài lại app.</small></span>
+      </button>
+      <button type="button" class="muc-cai-dat" id="nutNhap">
+        <span class="bieu-tuong-muc">📥</span>
+        <span><b>Nhập dữ liệu</b>
+          <small>Chọn file JSON đã xuất từ app, hoặc file Excel (.xlsx) hay .csv tải về từ Google Trang tính.
+            Khoản đã có sẽ được bỏ qua để không bị đếm trùng.</small></span>
+      </button>
+
+      <p class="chu-nho luu-y">Dữ liệu chỉ nằm trong điện thoại này. Nên xuất file JSON định kỳ và cất ở nơi khác
+        (Google Drive, Zalo, email...) để không mất khi đổi máy hoặc gỡ app.</p>
     </div>
-    <p class="trong" id="trongSoCai" hidden></p>
-  </section>
 
-  <!-- ========== DỮ LIỆU ========== -->
-  <section id="trangDuLieu" class="trang" aria-label="Dữ liệu" hidden>
-    <h1 class="tieu-de-so">DỮ LIỆU</h1>
-
-    <div class="the thong-tin">
-      <p id="thongTinKho"></p>
-      <p class="chu-nho">Dữ liệu chỉ nằm trong điện thoại này. Nên sao lưu định kỳ và cất file ở nơi khác
-        (Google Drive, Zalo, email...) để không mất khi đổi máy hoặc cài lại app.</p>
-    </div>
-
-    <button type="button" class="muc-du-lieu" id="nutSaoLuu">
-      <b>Sao lưu toàn bộ</b>
-      <span>Lưu tất cả các khoản vào một file sao lưu (đuôi .json).</span>
-    </button>
-    <button type="button" class="muc-du-lieu" id="nutKhoiPhuc">
-      <b>Khôi phục từ file sao lưu</b>
-      <span>Thay toàn bộ dữ liệu hiện có bằng dữ liệu trong file sao lưu.</span>
-    </button>
-    <button type="button" class="muc-du-lieu" id="nutXuatCSV">
-      <b>Xuất file bảng tính</b>
-      <span>File đuôi .csv, mở được bằng Google Trang tính hoặc Excel. Các cột giống trang SO_CAI:
-        NGÀY, GIỜ, LOẠI, HẠNG MỤC, SỐ TIỀN, GHI CHÚ.</span>
-    </button>
-    <button type="button" class="muc-du-lieu" id="nutNhapCSV">
-      <b>Nhập từ file bảng tính</b>
-      <span>Thêm các khoản từ file .csv tải về từ Google Trang tính: trang SO_CAI hoặc từng trang ngày
-        (tên dạng 2026-09-22). Khoản đã có sẽ được bỏ qua để không bị đếm trùng.</span>
-    </button>
-
-    <p class="phien-ban">Sổ chi tiêu · phiên bản 1.0</p>
+    <p class="phien-ban">Sổ chi tiêu · phiên bản 1.1</p>
   </section>
 
 </main>
@@ -174,26 +156,22 @@
     <span>Trang ngày</span>
   </button>
   <button type="button" data-trang="trangTongHop">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M10 20V5M15 20v-6M20 20V8"/></svg>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>
     <span>Tổng hợp</span>
   </button>
-  <button type="button" data-trang="trangSoCai">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2z"/><path d="M6 18a2 2 0 0 1 2-2h11M10 8h5M10 11h5"/></svg>
-    <span>Sổ cái</span>
-  </button>
-  <button type="button" data-trang="trangDuLieu">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>
-    <span>Dữ liệu</span>
+  <button type="button" data-trang="trangCaiDat">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    <span>Cài đặt</span>
   </button>
 </nav>
 
-<!-- ========== BẢNG NHẬP MỘT KHOẢN ========== -->
 <div class="lop-phu" id="lopPhu" hidden></div>
 
+<!-- ========== BẢNG NHẬP MỘT KHOẢN ========== -->
 <section class="bang-duoi" id="bangNhap" role="dialog" aria-modal="true" aria-labelledby="tieuDeNhap" hidden>
   <div class="bang-tieu-de">
     <h2 id="tieuDeNhap">Thêm khoản mới</h2>
-    <button type="button" class="nut-dong" id="dongNhap" aria-label="Đóng">×</button>
+    <button type="button" class="nut-dong" data-dong aria-label="Đóng">×</button>
   </div>
 
   <div class="chon-loai" id="chonLoai" role="radiogroup" aria-label="Loại">
@@ -233,15 +211,33 @@
   </div>
 </section>
 
-<!-- ========== HỘP XÁC NHẬN ========== -->
-<div class="hop-thoai" id="hopThoai" role="alertdialog" aria-modal="true" aria-labelledby="htTieuDe" hidden>
-  <h2 id="htTieuDe"></h2>
-  <p id="htNoiDung"></p>
-  <div class="hang-nut">
-    <button type="button" class="nut-vien" id="htHuy">Hủy</button>
-    <button type="button" class="nut-chinh" id="htDongY">Đồng ý</button>
+<!-- ========== CHỌN KỲ XEM ========== -->
+<section class="bang-duoi" id="bangKy" role="dialog" aria-modal="true" aria-labelledby="tieuDeKy" hidden>
+  <div class="bang-tieu-de">
+    <h2 id="tieuDeKy">Xem theo</h2>
+    <button type="button" class="nut-dong" data-dong aria-label="Đóng">×</button>
   </div>
-</div>
+  <div class="ds-ky" id="dsKy">
+    <button type="button" data-ky="Ngày">Hôm nay</button>
+    <button type="button" data-ky="Tuần">Tuần này</button>
+    <button type="button" data-ky="Tháng">Tháng này</button>
+    <button type="button" data-ky="Năm">Năm nay</button>
+  </div>
+  <label class="chon-ngay-cu-the">
+    <span>Chọn một ngày cụ thể…</span>
+    <input type="date" id="chonMoc" aria-label="Chọn ngày cụ thể">
+  </label>
+</section>
+
+<!-- ========== CÁC KHOẢN CỦA MỘT HẠNG MỤC ========== -->
+<section class="bang-duoi" id="bangChiTiet" role="dialog" aria-modal="true" aria-labelledby="ctTieuDe" hidden>
+  <div class="bang-tieu-de">
+    <h2 id="ctTieuDe"></h2>
+    <button type="button" class="nut-dong" data-dong aria-label="Đóng">×</button>
+  </div>
+  <p class="ct-phu" id="ctPhu"></p>
+  <div id="ctDs"></div>
+</section>
 
 <div class="thong-bao" id="thongBao" role="status" hidden>
   <span id="tbChu"></span>
