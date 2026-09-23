@@ -1,0 +1,54 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Mỗi lần GitHub build sẽ tăng số phiên bản, để cài bản mới đè lên bản cũ được.
+def buildNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+
+android {
+    namespace 'com.saptoi.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.saptoi.app'
+        minSdk 26
+        targetSdk 34
+        versionCode buildNumber
+        versionName "1.0.${buildNumber}"
+    }
+
+    // Khoá ký app dùng chung cho mọi bản build, để cập nhật không phải gỡ app cũ.
+    // Chỉ dùng để tự cài; nếu đưa lên CH Play thì cần tạo khoá riêng và giữ bí mật.
+    signingConfigs {
+        shared {
+            storeFile file('saptoi.keystore')
+            storePassword 'saptoi123'
+            keyAlias 'saptoi'
+            keyPassword 'saptoi123'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.shared
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.shared
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
+
+dependencies {
+    implementation 'org.osmdroid:osmdroid-android:6.1.20'
+}

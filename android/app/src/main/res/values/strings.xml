@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sắp Tới Nơi</string>
+
+    <string name="search_hint">Tìm nơi đến…</string>
+    <string name="search">Tìm</string>
+    <string name="searching">Đang tìm…</string>
+    <string name="search_empty">Không tìm thấy. Thử gõ cụ thể hơn, hoặc chạm lên bản đồ.</string>
+    <string name="network_error">Lỗi mạng, thử lại sau.</string>
+    <string name="pick_result">Chọn nơi đến</string>
+
+    <string name="no_dest">Chạm lên bản đồ hoặc tìm để chọn nơi đến.</string>
+    <string name="dest_label">Nơi đến: %1$s</string>
+    <string name="alert_when">Báo khi còn</string>
+    <string name="distance">Khoảng cách</string>
+    <string name="eta">Dự kiến tới trong</string>
+    <string name="dash">–</string>
+
+    <string name="start">Bắt đầu theo dõi</string>
+    <string name="stop">Dừng theo dõi</string>
+    <string name="save">☆ Lưu</string>
+    <string name="save_title">Đặt tên cho địa điểm này</string>
+    <string name="delete_saved">Xoá \"%1$s\" khỏi danh sách?</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Huỷ</string>
+    <string name="delete">Xoá</string>
+    <string name="my_location">Vị trí của tôi</string>
+
+    <string name="stop_first">Hãy dừng theo dõi trước khi đổi nơi đến.</string>
+    <string name="need_location">Cần cho phép dùng vị trí thì app mới báo được.</string>
+    <string name="location_off_title">Định vị đang tắt</string>
+    <string name="location_off_msg">Hãy bật Vị trí (GPS) trên điện thoại để app theo dõi được.</string>
+    <string name="open_settings">Mở cài đặt</string>
+    <string name="battery_title">Giữ app chạy ổn định</string>
+    <string name="battery_msg">Một số điện thoại tự tắt app chạy ngầm để tiết kiệm pin, làm app không báo được. Bấm \"Cho phép\" ở bước tiếp theo để app không bị tắt.</string>
+    <string name="battery_ok">Tiếp tục</string>
+    <string name="waiting_location">Đang chờ vị trí…</string>
+
+    <string name="channel_tracking">Đang theo dõi</string>
+    <string name="channel_alarm">Báo sắp tới nơi</string>
+    <string name="noti_tracking_title">Đang theo dõi đường tới %1$s</string>
+    <string name="noti_tracking_text">Còn %1$s · %2$s</string>
+    <string name="noti_tracking_text_no_eta">Còn %1$s</string>
+    <string name="noti_stop">Dừng</string>
+
+    <string name="alarm_title">Sắp tới nơi rồi!</string>
+    <string name="alarm_msg">Còn khoảng %1$s nữa là tới %2$s.</string>
+    <string name="alarm_dismiss">Tôi biết rồi</string>
+</resources>
