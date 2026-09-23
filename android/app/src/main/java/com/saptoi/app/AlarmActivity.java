@@ -1,11 +1,21 @@
 package com.saptoi.app;
 
+import android.animation.Animator;
+import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.view.WindowManager;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /** Màn hình báo to, hiện cả khi điện thoại đang khoá. */
 public class AlarmActivity extends Activity implements TrackingService.Listener {
@@ -13,6 +23,7 @@ public class AlarmActivity extends Activity implements TrackingService.Listener 
     public static final String EXTRA_MESSAGE = "message";
 
     private TextView txtMessage;
+    private final List<Animator> animators = new ArrayList<>();
 
     @Override
     @SuppressWarnings("deprecation")
@@ -31,6 +42,39 @@ public class AlarmActivity extends Activity implements TrackingService.Listener 
         txtMessage = findViewById(R.id.txtAlarmMsg);
         findViewById(R.id.btnDismiss).setOnClickListener(v -> dismiss());
         showMessage(getIntent());
+
+        pulse(findViewById(R.id.pulse1), 0);
+        pulse(findViewById(R.id.pulse2), 900);
+        ObjectAnimator beat = ObjectAnimator.ofPropertyValuesHolder(findViewById(R.id.alarmIcon),
+                PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.08f),
+                PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.08f));
+        beat.setDuration(450);
+        beat.setRepeatCount(ValueAnimator.INFINITE);
+        beat.setRepeatMode(ValueAnimator.REVERSE);
+        beat.setInterpolator(new AccelerateDecelerateInterpolator());
+        animators.add(beat);
+        beat.start();
+    }
+
+    /** Vòng tròn to dần và mờ dần, lặp lại mãi. */
+    private void pulse(View v, long delay) {
+        ObjectAnimator a = ObjectAnimator.ofPropertyValuesHolder(v,
+                PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 2f),
+                PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 2f),
+                PropertyValuesHolder.ofFloat(View.ALPHA, 0.9f, 0f));
+        a.setDuration(1800);
+        a.setStartDelay(delay);
+        a.setRepeatCount(ValueAnimator.INFINITE);
+        a.setInterpolator(new DecelerateInterpolator());
+        v.setAlpha(0f);
+        animators.add(a);
+        a.start();
+    }
+
+    @Override
+    protected void onDestroy() {
+        for (Animator a : animators) a.cancel();
+        super.onDestroy();
     }
 
     @Override

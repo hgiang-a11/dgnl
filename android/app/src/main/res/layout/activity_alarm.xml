@@ -8,21 +8,52 @@
     android:orientation="vertical"
     android:padding="32dp">
 
-    <ImageView
-        android:layout_width="96dp"
-        android:layout_height="96dp"
-        android:contentDescription="@null"
-        android:src="@drawable/ic_stat_pin" />
+    <!-- Hai vòng tròn lan ra liên tục phía sau icon. -->
+    <FrameLayout
+        android:layout_width="220dp"
+        android:layout_height="220dp">
+
+        <View
+            android:id="@+id/pulse1"
+            android:layout_width="110dp"
+            android:layout_height="110dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_pulse" />
+
+        <View
+            android:id="@+id/pulse2"
+            android:layout_width="110dp"
+            android:layout_height="110dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_pulse" />
+
+        <FrameLayout
+            android:id="@+id/alarmIcon"
+            android:layout_width="104dp"
+            android:layout_height="104dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_alarm_icon"
+            android:elevation="8dp">
+
+            <ImageView
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_stat_pin"
+                android:tint="@color/success" />
+        </FrameLayout>
+    </FrameLayout>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="8dp"
+        android:fontFamily="sans-serif-medium"
         android:gravity="center"
         android:text="@string/alarm_title"
         android:textColor="#FFFFFF"
-        android:textSize="34sp"
-        android:textStyle="bold" />
+        android:textSize="32sp" />
 
     <TextView
         android:id="@+id/txtAlarmMsg"
@@ -30,7 +61,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:gravity="center"
-        android:textColor="#FFFFFF"
+        android:lineSpacingExtra="2dp"
+        android:textColor="#E6FFFFFF"
         android:textSize="18sp" />
 
     <Button
@@ -38,11 +70,13 @@
         style="@style/Btn"
         android:layout_width="wrap_content"
         android:layout_height="64dp"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="44dp"
         android:background="@drawable/bg_btn_white"
-        android:paddingStart="40dp"
-        android:paddingEnd="40dp"
+        android:elevation="4dp"
+        android:paddingStart="44dp"
+        android:paddingEnd="44dp"
         android:text="@string/alarm_dismiss"
+        android:textAllCaps="false"
         android:textColor="@color/success_dark"
         android:textSize="20sp" />
 </LinearLayout>

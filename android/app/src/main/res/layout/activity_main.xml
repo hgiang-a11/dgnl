@@ -5,231 +5,37 @@
     android:layout_height="match_parent"
     android:background="@color/bg_alt">
 
-    <!-- Bản đồ và các nút nổi phía trên -->
-    <LinearLayout
+    <org.maplibre.android.maps.MapView
+        android:id="@+id/map"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="match_parent" />
 
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1">
+    <!-- Hai phần này đi lên / xuống theo bảng ở dưới. -->
+    <TextView
+        android:id="@+id/txtAttribution"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="10dp"
+        android:layout_marginBottom="6dp"
+        android:text="@string/attribution"
+        android:textColor="#99202124"
+        android:textSize="10sp" />
 
-            <org.maplibre.android.maps.MapView
-                android:id="@+id/map"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+    <ImageButton
+        android:id="@+id/btnMyLocation"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="14dp"
+        android:background="@drawable/bg_fab"
+        android:contentDescription="@string/my_location"
+        android:elevation="6dp"
+        android:src="@drawable/ic_my_location"
+        android:stateListAnimator="@animator/press" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom|start"
-                android:layout_marginStart="8dp"
-                android:layout_marginBottom="24dp"
-                android:text="@string/attribution"
-                android:textColor="#99202124"
-                android:textSize="10sp" />
-
-            <ImageButton
-                android:id="@+id/btnMyLocation"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_gravity="bottom|end"
-                android:layout_marginEnd="16dp"
-                android:layout_marginBottom="32dp"
-                android:background="@drawable/bg_fab"
-                android:contentDescription="@string/my_location"
-                android:elevation="6dp"
-                android:src="@drawable/ic_my_location" />
-        </FrameLayout>
-
-        <!-- Phần hẹn báo ở dưới -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="-20dp"
-            android:background="@drawable/bg_panel"
-            android:elevation="16dp"
-            android:orientation="vertical"
-            android:paddingStart="20dp"
-            android:paddingTop="10dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="16dp">
-
-            <View
-                android:layout_width="36dp"
-                android:layout_height="4dp"
-                android:layout_gravity="center_horizontal"
-                android:background="@drawable/bg_handle" />
-
-            <TextView
-                android:id="@+id/txtDestName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:ellipsize="end"
-                android:maxLines="2"
-                android:text="@string/pick_dest_title"
-                android:textColor="@color/text"
-                android:textSize="22sp" />
-
-            <TextView
-                android:id="@+id/txtDestAddr"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="@string/no_dest"
-                android:textColor="@color/text_light"
-                android:textSize="14sp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/alert_when"
-                    android:textColor="@color/text_light"
-                    android:textSize="14sp" />
-
-                <SeekBar
-                    android:id="@+id/seekRadius"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:max="29" />
-
-                <TextView
-                    android:id="@+id/txtRadius"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="end"
-                    android:minWidth="64dp"
-                    android:textColor="@color/text"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/alertRow"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/alert_type"
-                    android:textColor="@color/text_light"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/txtAlertMode"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:gravity="end"
-                    android:singleLine="true"
-                    android:textColor="@color/text"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_marginStart="4dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_chevron" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_stat"
-                    android:orientation="vertical"
-                    android:padding="10dp">
-
-                    <TextView
-                        style="@style/StatLabel"
-                        android:text="@string/distance" />
-
-                    <TextView
-                        android:id="@+id/txtDistance"
-                        style="@style/StatValue"
-                        android:text="@string/dash" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_stat"
-                    android:orientation="vertical"
-                    android:padding="10dp">
-
-                    <TextView
-                        style="@style/StatLabel"
-                        android:text="@string/eta" />
-
-                    <TextView
-                        android:id="@+id/txtEta"
-                        style="@style/StatValue"
-                        android:text="@string/dash" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btnStart"
-                    style="@style/Btn"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_btn_primary"
-                    android:enabled="false"
-                    android:text="@string/start"
-                    android:textColor="#FFFFFF" />
-
-                <Button
-                    android:id="@+id/btnSave"
-                    style="@style/Btn"
-                    android:layout_width="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_btn_secondary"
-                    android:enabled="false"
-                    android:text="@string/save"
-                    android:textColor="@color/text" />
-            </LinearLayout>
-        </LinearLayout>
-    </LinearLayout>
-
-    <!-- Ô tìm kiếm nổi trên bản đồ, giống Google Maps -->
+    <!-- Ô tìm kiếm nổi trên bản đồ -->
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
@@ -240,12 +46,12 @@
         <LinearLayout
             android:id="@+id/searchBar"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="54dp"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             android:background="@drawable/bg_search_bar"
             android:clickable="true"
-            android:elevation="4dp"
+            android:elevation="6dp"
             android:focusable="true"
             android:gravity="center_vertical"
             android:orientation="horizontal"
@@ -253,8 +59,8 @@
             android:paddingEnd="6dp">
 
             <ImageView
-                android:layout_width="26dp"
-                android:layout_height="26dp"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_search_pin" />
 
@@ -268,7 +74,7 @@
                 android:singleLine="true"
                 android:text="@string/search_hint"
                 android:textColor="@color/text_light"
-                android:textSize="18sp" />
+                android:textSize="17sp" />
 
             <ImageButton
                 android:id="@+id/btnClearDest"
@@ -288,7 +94,7 @@
             android:paddingStart="16dp"
             android:paddingTop="10dp"
             android:paddingEnd="16dp"
-            android:paddingBottom="6dp"
+            android:paddingBottom="8dp"
             android:scrollbars="none">
 
             <LinearLayout
@@ -298,6 +104,427 @@
                 android:orientation="horizontal" />
         </HorizontalScrollView>
     </LinearLayout>
+
+    <!-- Bảng dưới: kéo lên / xuống được -->
+    <com.saptoi.app.SheetLayout
+        android:id="@+id/sheet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_panel"
+        android:elevation="16dp"
+        android:orientation="vertical"
+        android:paddingBottom="8dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="22dp">
+
+            <View
+                android:layout_width="36dp"
+                android:layout_height="4dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_handle" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp">
+
+            <FrameLayout
+                android:id="@+id/destIconBg"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginTop="2dp"
+                android:background="@drawable/bg_icon_circle">
+
+                <ImageView
+                    android:id="@+id/destIcon"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/txtDestName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif-medium"
+                    android:maxLines="2"
+                    android:text="@string/pick_dest_title"
+                    android:textColor="@color/text"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/txtDestMeta"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:textColor="@color/text_light"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/txtDestAddr"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:text="@string/no_dest"
+                    android:textColor="@color/text_light"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/gatesBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:text="@string/gates_title"
+                android:textColor="@color/text_light"
+                android:textSize="13sp" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:clipToPadding="false"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/gatesRow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/statsRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_stat"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_ruler"
+                    android:tint="@color/on_primary_container" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/StatLabel"
+                        android:text="@string/distance" />
+
+                    <TextView
+                        android:id="@+id/txtDistance"
+                        style="@style/StatValue"
+                        android:text="@string/dash" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_stat"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_schedule"
+                    android:tint="@color/on_primary_container" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/StatLabel"
+                        android:text="@string/eta" />
+
+                    <TextView
+                        android:id="@+id/txtEta"
+                        style="@style/StatValue"
+                        android:text="@string/dash" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/actionsRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp">
+
+            <LinearLayout
+                android:id="@+id/btnStart"
+                style="@style/PillButton"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_btn_primary">
+
+                <ImageView
+                    android:id="@+id/icStart"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_navigation"
+                    android:tint="#FFFFFF" />
+
+                <TextView
+                    android:id="@+id/txtStart"
+                    style="@style/PillButtonText"
+                    android:text="@string/start"
+                    android:textColor="#FFFFFF" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnSave"
+                style="@style/PillButton"
+                android:layout_width="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_btn_outline"
+                android:paddingStart="14dp"
+                android:paddingEnd="16dp">
+
+                <ImageView
+                    android:id="@+id/icSave"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_star_border"
+                    android:tint="@color/primary" />
+
+                <TextView
+                    android:id="@+id/txtSave"
+                    style="@style/PillButtonText"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/save"
+                    android:textColor="@color/primary" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btnShare"
+                style="@style/RoundIconButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                android:contentDescription="@string/share"
+                android:src="@drawable/ic_share"
+                android:tint="@color/primary" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="16dp"
+            android:background="@color/divider" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_radar" />
+
+            <TextView
+                style="@style/SectionLabel"
+                android:layout_width="0dp"
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:text="@string/alert_when" />
+
+            <TextView
+                android:id="@+id/txtRadius"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_pill_value"
+                android:fontFamily="sans-serif-medium"
+                android:minWidth="64dp"
+                android:gravity="center"
+                android:paddingStart="12dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="4dp"
+                android:textColor="@color/on_primary_container"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+            <ImageButton
+                android:id="@+id/btnMinus"
+                style="@style/RoundIconButton"
+                android:contentDescription="@string/radius_less"
+                android:src="@drawable/ic_remove" />
+
+            <SeekBar
+                android:id="@+id/seekRadius"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:max="299"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:progressDrawable="@drawable/seek_progress"
+                android:splitTrack="false"
+                android:thumb="@drawable/seek_thumb" />
+
+            <ImageButton
+                android:id="@+id/btnPlus"
+                style="@style/RoundIconButton"
+                android:contentDescription="@string/radius_more"
+                android:src="@drawable/ic_add" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="70dp"
+            android:paddingEnd="70dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/radius_min"
+                android:textColor="@color/text_hint"
+                android:textSize="11sp" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/radius_max"
+                android:textColor="@color/text_hint"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:background="@color/divider" />
+
+        <LinearLayout
+            android:id="@+id/alertRow"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_row"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="20dp"
+            android:paddingEnd="16dp">
+
+            <ImageView
+                android:id="@+id/icAlert"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_bell" />
+
+            <TextView
+                style="@style/SectionLabel"
+                android:layout_marginStart="14dp"
+                android:text="@string/alert_type" />
+
+            <TextView
+                android:id="@+id/txtAlertMode"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:gravity="end"
+                android:singleLine="true"
+                android:textColor="@color/text_light"
+                android:textSize="14sp" />
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="4dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_chevron" />
+        </LinearLayout>
+    </com.saptoi.app.SheetLayout>
 
     <!-- Trang tìm kiếm toàn màn hình -->
     <LinearLayout
@@ -313,7 +540,7 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="54dp"
             android:layout_margin="16dp"
             android:background="@drawable/bg_search_field"
             android:gravity="center_vertical"
@@ -343,7 +570,7 @@
                 android:singleLine="true"
                 android:textColor="@color/text"
                 android:textColorHint="@color/text_light"
-                android:textSize="18sp" />
+                android:textSize="17sp" />
 
             <ImageButton
                 android:id="@+id/btnClearText"
@@ -381,14 +608,14 @@
             android:id="@+id/txtListTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:paddingStart="20dp"
             android:paddingTop="16dp"
             android:paddingEnd="20dp"
             android:paddingBottom="4dp"
             android:text="@string/recent"
             android:textColor="@color/text"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textSize="15sp" />
 
         <ListView
             android:id="@+id/listResults"
@@ -396,6 +623,7 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:divider="@null"
-            android:dividerHeight="0dp" />
+            android:dividerHeight="0dp"
+            android:layoutAnimation="@anim/rows_layout" />
     </LinearLayout>
 </FrameLayout>

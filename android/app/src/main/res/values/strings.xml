@@ -2,35 +2,51 @@
 <resources>
     <string name="app_name">Sắp Tới Nơi</string>
 
-    <string name="search_hint">Tìm kiếm ở đây</string>
-    <string name="search">Tìm</string>
+    <string name="search_hint">Tìm địa điểm, địa chỉ</string>
     <string name="searching">Đang tìm…</string>
     <string name="search_empty">Không tìm thấy. Thử gõ cụ thể hơn, hoặc chạm lên bản đồ.</string>
     <string name="network_error">Lỗi mạng, thử lại sau.</string>
 
-    <string name="no_dest">Chạm lên bản đồ hoặc tìm kiếm ở trên.</string>
+    <string name="no_dest">Chạm lên bản đồ, chạm vào một địa điểm, hoặc tìm ở ô phía trên.</string>
     <string name="pick_dest_title">Chọn nơi đến</string>
+    <string name="finding_address">Đang tìm địa chỉ…</string>
+    <string name="dropped_pin">Vị trí đã ghim</string>
     <string name="recent">Gần đây</string>
     <string name="results">Kết quả</string>
     <string name="no_recent">Chưa có tìm kiếm nào gần đây</string>
     <string name="clear">Xoá</string>
     <string name="back">Quay lại</string>
     <string name="attribution">© OpenFreeMap © OpenStreetMap</string>
+    <string name="gates_title">Cổng / lối vào</string>
+    <string name="away">cách bạn %1$s</string>
+
     <string name="alert_type">Kiểu báo</string>
     <string name="alert_sound_vibrate">Chuông + rung</string>
     <string name="alert_vibrate_only">Chỉ rung</string>
     <string name="alert_pick_ringtone">Chọn nhạc chuông…</string>
     <string name="alert_default_ringtone">Chuông mặc định</string>
     <string name="alert_dialog_title">Khi sắp tới nơi</string>
-    <string name="alert_when">Báo khi còn</string>
-    <string name="distance">Khoảng cách</string>
+    <string name="alert_when">Báo khi còn cách</string>
+    <string name="radius_min">10 m</string>
+    <string name="radius_max">3 km</string>
+    <string name="radius_less">Giảm 10 m</string>
+    <string name="radius_more">Tăng 10 m</string>
+    <string name="distance">Còn cách</string>
     <string name="eta">Dự kiến tới trong</string>
     <string name="dash">–</string>
 
     <string name="start">Bắt đầu theo dõi</string>
     <string name="stop">Dừng theo dõi</string>
-    <string name="save">☆ Lưu</string>
+    <string name="save">Lưu</string>
+    <string name="saved">Đã lưu</string>
+    <string name="share">Chia sẻ</string>
     <string name="save_title">Đặt tên cho địa điểm này</string>
+    <string name="marker_title">Thêm điểm đánh dấu</string>
+    <string name="marker_hint">Ví dụ: Nhà, Công ty, Trường</string>
+    <string name="marker_default">Điểm đánh dấu</string>
+    <string name="marker_added">Đã thêm điểm đánh dấu \"%1$s\"</string>
+    <string name="unsave">Bỏ lưu \"%1$s\"?</string>
+    <string name="remove">Bỏ lưu</string>
     <string name="delete_saved">Xoá \"%1$s\" khỏi danh sách?</string>
     <string name="ok">OK</string>
     <string name="cancel">Huỷ</string>

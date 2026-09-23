@@ -176,12 +176,13 @@ public class TrackingService extends Service implements LocationListener {
         float distance = result[0];
 
         // Tốc độ: ưu tiên số của GPS, nếu không có thì tự tính từ 2 lần đo, rồi làm mượt.
+        Location prev = lastLocation;
         float speed = -1;
         if (loc.hasSpeed()) {
             speed = loc.getSpeed();
-        } else if (lastLocation != null) {
-            long dt = loc.getTime() - lastLocation.getTime();
-            if (dt > 0) speed = loc.distanceTo(lastLocation) / (dt / 1000f);
+        } else if (prev != null) {
+            long dt = loc.getTime() - prev.getTime();
+            if (dt > 0) speed = loc.distanceTo(prev) / (dt / 1000f);
         }
         if (speed >= 0) smoothSpeed = smoothSpeed < 0 ? speed : smoothSpeed * 0.7f + speed * 0.3f;
         lastLocation = loc;
@@ -189,7 +190,7 @@ public class TrackingService extends Service implements LocationListener {
         long eta = smoothSpeed > 0.5f ? (long) (distance / smoothSpeed) : -1;
         int radius = Prefs.getRadius(this);
 
-        if (distance <= radius) {
+        if (distance <= radius || passedThrough(prev, loc, radius)) {
             alarming = true;
             publish(new Status(true, true, distance, eta));
             startAlarm(distance);
@@ -197,6 +198,27 @@ public class TrackingService extends Service implements LocationListener {
             publish(new Status(true, false, distance, eta));
             updateTrackingNotification(distance, eta);
         }
+    }
+
+    /**
+     * Với bán kính nhỏ (vd 10 m), đi nhanh có thể vượt qua cả vòng tròn giữa 2 lần đo.
+     * Nên xét cả đoạn thẳng nối 2 lần đo liên tiếp, nếu cả 2 lần đo đều đủ chính xác.
+     */
+    private boolean passedThrough(Location a, Location b, int radius) {
+        if (a == null || !a.hasAccuracy() || !b.hasAccuracy()) return false;
+        if (a.getAccuracy() > 25 || b.getAccuracy() > 25) return false;
+        if (b.getTime() - a.getTime() > 20000 || a.distanceTo(b) > 300) return false;
+        double k = 111320.0;
+        double cos = Math.cos(Math.toRadians(dest.lat));
+        double ax = (a.getLongitude() - dest.lng) * k * cos;
+        double ay = (a.getLatitude() - dest.lat) * k;
+        double bx = (b.getLongitude() - dest.lng) * k * cos;
+        double by = (b.getLatitude() - dest.lat) * k;
+        double dx = bx - ax;
+        double dy = by - ay;
+        double len2 = dx * dx + dy * dy;
+        double t = len2 == 0 ? 0 : Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2));
+        return Math.hypot(ax + t * dx, ay + t * dy) <= radius;
     }
 
     // Các hàm dưới bắt buộc phải có trên Android 10 trở xuống, nếu thiếu app sẽ bị lỗi.

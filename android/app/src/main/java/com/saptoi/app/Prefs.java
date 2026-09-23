@@ -47,13 +47,22 @@ public final class Prefs {
         }
     }
 
-    /** Bán kính báo, tính bằng mét. */
+    public static final int RADIUS_MIN = 10;
+    public static final int RADIUS_MAX = 3000;
+    public static final int RADIUS_STEP = 10;
+
+    /** Bán kính báo, tính bằng mét: từ 10 m tới 3 km, bước 10 m. */
     public static int getRadius(Context c) {
-        return sp(c).getInt(KEY_RADIUS, 500);
+        return clampRadius(sp(c).getInt(KEY_RADIUS, 500));
     }
 
     public static void setRadius(Context c, int meters) {
-        sp(c).edit().putInt(KEY_RADIUS, meters).apply();
+        sp(c).edit().putInt(KEY_RADIUS, clampRadius(meters)).apply();
+    }
+
+    public static int clampRadius(int meters) {
+        int r = Math.round(meters / (float) RADIUS_STEP) * RADIUS_STEP;
+        return Math.max(RADIUS_MIN, Math.min(RADIUS_MAX, r));
     }
 
     public static List<Place> getSaved(Context c) {

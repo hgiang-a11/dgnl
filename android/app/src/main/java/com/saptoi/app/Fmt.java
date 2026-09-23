@@ -13,6 +13,14 @@ public final class Fmt {
         return String.format(VI, "%d m", Math.round(meters));
     }
 
+    /** Bán kính báo (bội số của 10 m): "850 m", "1 km", "1,5 km", "1,25 km". */
+    public static String radius(int meters) {
+        if (meters < 1000) return meters + " m";
+        String km = String.format(VI, "%.2f", meters / 1000f);
+        km = km.replaceAll("0+$", "").replaceAll("[,.]$", "");
+        return km + " km";
+    }
+
     /** Trả về null nếu chưa ước tính được. */
     public static String duration(long seconds) {
         if (seconds <= 0) return null;

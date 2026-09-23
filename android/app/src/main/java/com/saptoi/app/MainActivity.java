@@ -1,17 +1,19 @@
 package com.saptoi.app;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.drawable.Drawable;
+import android.graphics.PointF;
+import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.Ringtone;
@@ -24,17 +26,30 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.text.Editable;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
+import android.transition.AutoTransition;
+import android.transition.TransitionManager;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.OvershootInterpolator;
+import android.view.animation.PathInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.BaseAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -49,6 +64,7 @@ import org.maplibre.android.MapLibre;
 import org.maplibre.android.camera.CameraPosition;
 import org.maplibre.android.camera.CameraUpdateFactory;
 import org.maplibre.android.geometry.LatLng;
+import org.maplibre.android.geometry.LatLngBounds;
 import org.maplibre.android.location.LocationComponent;
 import org.maplibre.android.location.LocationComponentActivationOptions;
 import org.maplibre.android.location.modes.CameraMode;
@@ -56,7 +72,9 @@ import org.maplibre.android.location.modes.RenderMode;
 import org.maplibre.android.maps.MapLibreMap;
 import org.maplibre.android.maps.MapView;
 import org.maplibre.android.maps.Style;
+import org.maplibre.android.style.expressions.Expression;
 import org.maplibre.android.style.layers.FillLayer;
+import org.maplibre.android.style.layers.Layer;
 import org.maplibre.android.style.layers.LineLayer;
 import org.maplibre.android.style.layers.Property;
 import org.maplibre.android.style.layers.PropertyFactory;
@@ -69,22 +87,26 @@ import org.maplibre.geojson.Polygon;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends Activity implements TrackingService.Listener {
 
     private static final int REQ_LOCATION = 1;
     private static final int REQ_NOTIFICATIONS = 2;
-    private static final int RADIUS_STEP = 100;
     private static final int REQ_RINGTONE = 3;
     private static final long SUGGEST_DELAY_MS = 250;
     private static final int GOOGLE_BLUE = Color.rgb(26, 115, 232);
+    private static final float FILL_OPACITY = 0.14f;
 
     /**
      * Bản đồ OpenFreeMap: miễn phí, không cần mã đăng ký. Bản đồ dạng vẽ (vector) nên luôn nét
@@ -93,25 +115,62 @@ public class MainActivity extends Activity implements TrackingService.Listener {
     private static final String STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
     private static final String SRC_CIRCLE = "dest-circle";
     private static final String SRC_PIN = "dest-pin";
-    private static final String IMG_PIN = "dest-pin-img";
+    private static final String SRC_SAVED = "saved-places";
+    private static final String LAYER_FILL = "dest-circle-fill";
+    private static final String LAYER_LINE = "dest-circle-line";
+    private static final String LAYER_PIN = "dest-pin-layer";
+    private static final String LAYER_SAVED = "saved-layer";
+
+    /** Các loại địa điểm rộng, thường có nhiều cổng (trung tâm thương mại, bệnh viện, đại học...). */
+    private static final Set<String> BIG_KINDS = new HashSet<>(Arrays.asList(
+            "mall", "market", "hospital", "university", "park", "attraction", "museum", "rail",
+            "airport", "sport"));
+    /** Các loại nhỏ hơn nhưng vẫn hay có cổng; chỉ tìm cổng ở sát bên. */
+    private static final Set<String> SMALL_GATE_KINDS = new HashSet<>(Arrays.asList(
+            "grocery", "school", "gov", "worship", "lodging", "place"));
+
+    private static final int T_SAVED = 0;
+    private static final int T_HISTORY = 1;
+    private static final int T_RESULT = 2;
 
     private MapView mapView;
     /** null cho tới khi bản đồ tải xong. */
     private MapLibreMap map;
     private Style style;
 
-    // Màn hình bản đồ
+    private View root;
+    private View topBar;
+    private SheetLayout sheet;
+    private ImageButton fab;
+    private TextView txtAttribution;
+
+    // Ô tìm kiếm trên bản đồ
     private TextView txtSearchBar;
     private ImageButton btnClearDest;
     private LinearLayout mapChips;
+
+    // Bảng dưới
+    private View destIconBg;
+    private ImageView destIcon;
     private TextView txtDestName;
+    private TextView txtDestMeta;
     private TextView txtDestAddr;
-    private TextView txtRadius;
-    private TextView txtAlertMode;
+    private View gatesBox;
+    private LinearLayout gatesRow;
+    private View statsRow;
     private TextView txtDistance;
     private TextView txtEta;
-    private Button btnStart;
-    private Button btnSave;
+    private View btnStart;
+    private ImageView icStart;
+    private TextView txtStart;
+    private View btnSave;
+    private ImageView icSave;
+    private TextView txtSave;
+    private View btnShare;
+    private TextView txtRadius;
+    private SeekBar seekRadius;
+    private ImageView icAlert;
+    private TextView txtAlertMode;
 
     // Trang tìm kiếm
     private View searchPage;
@@ -119,15 +178,27 @@ public class MainActivity extends Activity implements TrackingService.Listener {
     private ImageButton btnClearText;
     private LinearLayout searchChips;
     private TextView txtListTitle;
+    private ListView listResults;
     private final ResultsAdapter adapter = new ResultsAdapter();
+    private boolean searchOpen;
 
     private Place dest;
     private boolean running;
+    private boolean started;
     /** Đang xin quyền để bấm "Bắt đầu" (chứ không phải để xem vị trí của tôi). */
     private boolean startAfterPermission;
     private boolean askedNotifications;
     /** Tăng mỗi lần gõ, để bỏ qua kết quả của lần gõ cũ trả về muộn. */
     private int searchSeq;
+    private int gateSeq;
+
+    /** Địa điểm đang hiện danh sách cổng, và các cổng của nó. */
+    private Place gatesParent;
+    private final List<Place> gates = new ArrayList<>();
+
+    private ValueAnimator pinAnim;
+    private ValueAnimator circleAnim;
+    private ValueAnimator pulseAnim;
 
     /** Nhiều luồng để lần gõ mới không phải chờ lần gõ cũ tìm xong. */
     private final ExecutorService io = Executors.newCachedThreadPool();
@@ -149,49 +220,14 @@ public class MainActivity extends Activity implements TrackingService.Listener {
         MapLibre.getInstance(this);
 
         setContentView(R.layout.activity_main);
+        bindViews();
         drawBehindStatusBar();
-
-        mapView = findViewById(R.id.map);
         mapView.onCreate(savedInstanceState);
-        txtSearchBar = findViewById(R.id.txtSearchBar);
-        btnClearDest = findViewById(R.id.btnClearDest);
-        mapChips = findViewById(R.id.mapChips);
-        txtDestName = findViewById(R.id.txtDestName);
-        txtDestAddr = findViewById(R.id.txtDestAddr);
-        txtRadius = findViewById(R.id.txtRadius);
-        txtAlertMode = findViewById(R.id.txtAlertMode);
-        txtDistance = findViewById(R.id.txtDistance);
-        txtEta = findViewById(R.id.txtEta);
-        btnStart = findViewById(R.id.btnStart);
-        btnSave = findViewById(R.id.btnSave);
-        searchPage = findViewById(R.id.searchPage);
-        edtSearch = findViewById(R.id.edtSearch);
-        btnClearText = findViewById(R.id.btnClearText);
-        searchChips = findViewById(R.id.searchChips);
-        txtListTitle = findViewById(R.id.txtListTitle);
-        SeekBar seekRadius = findViewById(R.id.seekRadius);
 
         setupMap();
         setupSearch();
-
-        int radius = Prefs.getRadius(this);
-        seekRadius.setProgress(Math.max(0, radius / RADIUS_STEP - 1));
-        txtRadius.setText(Fmt.distance(radius));
-        seekRadius.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
-                int r = (progress + 1) * RADIUS_STEP;
-                txtRadius.setText(Fmt.distance(r));
-                Prefs.setRadius(MainActivity.this, r);
-                updateDestOnMap();
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar s) {}
-
-            @Override
-            public void onStopTrackingTouch(SeekBar s) {}
-        });
+        setupSheet();
+        setupRadius();
 
         btnStart.setOnClickListener(v -> {
             if (running) {
@@ -201,17 +237,18 @@ public class MainActivity extends Activity implements TrackingService.Listener {
                 startTracking();
             }
         });
-        btnSave.setOnClickListener(v -> saveCurrent());
+        btnSave.setOnClickListener(v -> onSaveClicked());
+        btnShare.setOnClickListener(v -> shareDest());
         findViewById(R.id.alertRow).setOnClickListener(v -> chooseAlertMode());
         showAlertMode();
-        findViewById(R.id.btnMyLocation).setOnClickListener(v -> goToMyLocation());
+        fab.setOnClickListener(v -> goToMyLocation());
         btnClearDest.setOnClickListener(v -> {
             if (running) toast(R.string.stop_first);
             else clearDest();
         });
 
         Place saved = Prefs.getDest(this);
-        if (saved != null) setDest(saved);
+        if (saved != null) setDest(saved, false);
         else showDest();
         renderSaved();
 
@@ -219,6 +256,45 @@ public class MainActivity extends Activity implements TrackingService.Listener {
             startAfterPermission = false;
             requestLocationPermission();
         }
+    }
+
+    private void bindViews() {
+        root = findViewById(R.id.root);
+        mapView = findViewById(R.id.map);
+        topBar = findViewById(R.id.topBar);
+        sheet = findViewById(R.id.sheet);
+        fab = findViewById(R.id.btnMyLocation);
+        txtAttribution = findViewById(R.id.txtAttribution);
+        txtSearchBar = findViewById(R.id.txtSearchBar);
+        btnClearDest = findViewById(R.id.btnClearDest);
+        mapChips = findViewById(R.id.mapChips);
+        destIconBg = findViewById(R.id.destIconBg);
+        destIcon = findViewById(R.id.destIcon);
+        txtDestName = findViewById(R.id.txtDestName);
+        txtDestMeta = findViewById(R.id.txtDestMeta);
+        txtDestAddr = findViewById(R.id.txtDestAddr);
+        gatesBox = findViewById(R.id.gatesBox);
+        gatesRow = findViewById(R.id.gatesRow);
+        statsRow = findViewById(R.id.statsRow);
+        txtDistance = findViewById(R.id.txtDistance);
+        txtEta = findViewById(R.id.txtEta);
+        btnStart = findViewById(R.id.btnStart);
+        icStart = findViewById(R.id.icStart);
+        txtStart = findViewById(R.id.txtStart);
+        btnSave = findViewById(R.id.btnSave);
+        icSave = findViewById(R.id.icSave);
+        txtSave = findViewById(R.id.txtSave);
+        btnShare = findViewById(R.id.btnShare);
+        txtRadius = findViewById(R.id.txtRadius);
+        seekRadius = findViewById(R.id.seekRadius);
+        icAlert = findViewById(R.id.icAlert);
+        txtAlertMode = findViewById(R.id.txtAlertMode);
+        searchPage = findViewById(R.id.searchPage);
+        edtSearch = findViewById(R.id.edtSearch);
+        btnClearText = findViewById(R.id.btnClearText);
+        searchChips = findViewById(R.id.searchChips);
+        txtListTitle = findViewById(R.id.txtListTitle);
+        listResults = findViewById(R.id.listResults);
     }
 
     /** Cho bản đồ tràn lên dưới thanh trạng thái (giờ, pin) giống Google Maps. */
@@ -232,15 +308,50 @@ public class MainActivity extends Activity implements TrackingService.Listener {
         else w.setNavigationBarColor(Color.BLACK); // Android 8.0 chưa có nút điều hướng màu tối
         w.getDecorView().setSystemUiVisibility(flags);
 
-        View topBar = findViewById(R.id.topBar);
         int topPad = topBar.getPaddingTop();
-        findViewById(R.id.root).setOnApplyWindowInsetsListener((v, insets) -> {
+        root.setOnApplyWindowInsetsListener((v, insets) -> {
             int top = insets.getSystemWindowInsetTop();
             topBar.setPadding(0, top + topPad, 0, 0);
             // Chừa chỗ cho thanh trạng thái ở trên và bàn phím ở dưới.
             searchPage.setPadding(0, top, 0, insets.getSystemWindowInsetBottom());
             return insets;
         });
+    }
+
+    // ---------- Bảng dưới kéo được ----------
+
+    private void setupSheet() {
+        sheet.setPeekAnchor(findViewById(R.id.actionsRow), dp(16));
+        sheet.setCallback(this::onSheetMoved);
+    }
+
+    /** Nút "vị trí của tôi" và dòng ghi nguồn bản đồ luôn nằm ngay trên bảng, giống Google Maps. */
+    private void onSheetMoved(SheetLayout s) {
+        float lift = s.visibleHeight();
+        fab.setTranslationY(-lift);
+        txtAttribution.setTranslationY(-lift);
+        // Bảng kéo lên quá cao thì ẩn dần nút đi cho gọn.
+        float free = root.getHeight() - lift - topBar.getBottom();
+        float a = Math.max(0f, Math.min(1f, (free - dp(80)) / (float) dp(60)));
+        fab.setAlpha(a);
+        txtAttribution.setAlpha(a);
+        int vis = a < 0.05f ? View.INVISIBLE : View.VISIBLE;
+        if (fab.getVisibility() != vis) fab.setVisibility(vis);
+    }
+
+    /** Làm mượt khi bảng đổi chiều cao (hiện / ẩn một phần). */
+    private void animateSheetChange() {
+        if (!(root instanceof ViewGroup)) return;
+        AutoTransition t = new AutoTransition();
+        t.setDuration(220);
+        t.setInterpolator(new PathInterpolator(0.4f, 0f, 0.2f, 1f));
+        t.excludeTarget(mapView, true);
+        t.excludeChildren(mapView, true);
+        t.excludeTarget(searchPage, true);
+        t.excludeChildren(searchPage, true);
+        t.excludeTarget(topBar, true);
+        t.excludeChildren(topBar, true);
+        TransitionManager.beginDelayedTransition((ViewGroup) root, t);
     }
 
     // ---------- Bản đồ ----------
@@ -259,40 +370,170 @@ public class MainActivity extends Activity implements TrackingService.Listener {
             Location last = lastKnownLocation();
             if (dest != null) {
                 start = new LatLng(dest.lat, dest.lng);
-                zoom = 15;
+                zoom = 16;
             } else if (last != null) {
                 start = new LatLng(last.getLatitude(), last.getLongitude());
                 zoom = 15;
             }
             m.setCameraPosition(new CameraPosition.Builder().target(start).zoom(zoom).build());
 
-            m.addOnMapClickListener(p -> {
-                if (running) toast(R.string.stop_first);
-                else setDest(new Place(null, p.getLatitude(), p.getLongitude()));
-                return true;
-            });
+            m.addOnMapClickListener(this::onMapTap);
+            m.addOnMapLongClickListener(this::onMapLongPress);
 
-            m.setStyle(new Style.Builder().fromUri(STYLE_URL)
-                    .withImage(IMG_PIN, drawableToBitmap(getDrawable(R.drawable.ic_dest_pin))), st -> {
+            m.setStyle(new Style.Builder().fromUri(STYLE_URL), st -> {
                 style = st;
-                // Vòng tròn vùng báo (nằm dưới) và ghim nơi đến (nằm trên).
-                st.addSource(new GeoJsonSource(SRC_CIRCLE));
-                st.addSource(new GeoJsonSource(SRC_PIN));
-                st.addLayer(new FillLayer("dest-circle-fill", SRC_CIRCLE).withProperties(
-                        PropertyFactory.fillColor(GOOGLE_BLUE),
-                        PropertyFactory.fillOpacity(0.15f)));
-                st.addLayer(new LineLayer("dest-circle-line", SRC_CIRCLE).withProperties(
-                        PropertyFactory.lineColor(GOOGLE_BLUE),
-                        PropertyFactory.lineWidth(2f)));
-                st.addLayer(new SymbolLayer("dest-pin-layer", SRC_PIN).withProperties(
-                        PropertyFactory.iconImage(IMG_PIN),
-                        PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM),
-                        PropertyFactory.iconAllowOverlap(true),
-                        PropertyFactory.iconIgnorePlacement(true)));
-                updateDestOnMap();
+                try {
+                    Poi.addImages(this, st);
+                } catch (RuntimeException ignored) {
+                    // Không vẽ được icon tròn thì vẫn dùng icon gốc của bản đồ.
+                }
+                try {
+                    Poi.restyleLayers(st);
+                } catch (RuntimeException ignored) {
+                }
+                addOverlays(st);
+                updateDestOnMap(false);
+                updateSavedOnMap();
                 if (hasLocationPermission()) enableMyLocation();
+                updatePulse();
             });
         });
+    }
+
+    /** Vòng tròn vùng báo, các điểm đã lưu (ngôi sao), và ghim nơi đến. */
+    private void addOverlays(Style st) {
+        st.addSource(new GeoJsonSource(SRC_CIRCLE));
+        st.addSource(new GeoJsonSource(SRC_SAVED));
+        st.addSource(new GeoJsonSource(SRC_PIN));
+
+        // Vòng tròn nằm dưới chữ và icon của bản đồ để không che tên đường.
+        FillLayer fill = new FillLayer(LAYER_FILL, SRC_CIRCLE).withProperties(
+                PropertyFactory.fillColor(GOOGLE_BLUE),
+                PropertyFactory.fillOpacity(FILL_OPACITY));
+        LineLayer line = new LineLayer(LAYER_LINE, SRC_CIRCLE).withProperties(
+                PropertyFactory.lineColor(GOOGLE_BLUE),
+                PropertyFactory.lineWidth(2f));
+        String firstLabels = firstSymbolLayer(st);
+        if (firstLabels != null) {
+            st.addLayerBelow(fill, firstLabels);
+            st.addLayerBelow(line, firstLabels);
+        } else {
+            st.addLayer(fill);
+            st.addLayer(line);
+        }
+
+        st.addLayer(new SymbolLayer(LAYER_SAVED, SRC_SAVED).withProperties(
+                PropertyFactory.iconImage(Poi.imageName("saved")),
+                PropertyFactory.iconSize(1.15f),
+                PropertyFactory.iconAllowOverlap(true),
+                PropertyFactory.textField(Expression.get("name")),
+                PropertyFactory.textFont(new String[]{"Noto Sans Regular"}),
+                PropertyFactory.textSize(12f),
+                PropertyFactory.textColor(getColor(R.color.amber_dark)),
+                PropertyFactory.textHaloColor("#FFFFFF"),
+                PropertyFactory.textHaloWidth(1.4f),
+                PropertyFactory.textVariableAnchor(new String[]{"left", "right", "top"}),
+                PropertyFactory.textRadialOffset(1.35f),
+                PropertyFactory.textJustify("auto"),
+                PropertyFactory.textMaxWidth(8f),
+                PropertyFactory.textOptional(true)));
+
+        st.addLayer(new SymbolLayer(LAYER_PIN, SRC_PIN).withProperties(
+                PropertyFactory.iconImage(Expression.get("icon")),
+                PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM),
+                PropertyFactory.iconAllowOverlap(true),
+                PropertyFactory.iconIgnorePlacement(true)));
+    }
+
+    private static String firstSymbolLayer(Style st) {
+        for (Layer l : st.getLayers()) {
+            if (l instanceof SymbolLayer) return l.getId();
+        }
+        return null;
+    }
+
+    /** Chạm bản đồ: vào điểm đã lưu hoặc icon địa điểm thì chọn đúng chỗ đó, còn không thì ghim tại chỗ chạm. */
+    private boolean onMapTap(LatLng p) {
+        if (map == null) return false;
+        PointF pt = map.getProjection().toScreenLocation(p);
+        Place hit = savedAt(pt);
+        if (hit == null) hit = poiAt(pt);
+        if (hit != null) {
+            selectPlace(hit, Double.NaN);
+        } else if (running) {
+            toast(R.string.stop_first);
+        } else {
+            selectPlace(new Place(null, p.getLatitude(), p.getLongitude(), null, "pin"), Double.NaN);
+        }
+        return true;
+    }
+
+    /** Nhấn giữ bản đồ: thêm điểm đánh dấu tại đó. */
+    private boolean onMapLongPress(LatLng p) {
+        if (map == null) return false;
+        mapView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+        Place poi = poiAt(map.getProjection().toScreenLocation(p));
+        promptSaveMarker(poi != null ? poi : new Place(null, p.getLatitude(), p.getLongitude(), null, "pin"),
+                R.string.marker_title);
+        return true;
+    }
+
+    /** Icon địa điểm (bệnh viện, quán ăn...) gần chỗ chạm nhất, hoặc null. */
+    private Place poiAt(PointF pt) {
+        if (style == null) return null;
+        float r = dp(18);
+        List<Feature> features;
+        try {
+            features = map.queryRenderedFeatures(new RectF(pt.x - r, pt.y - r, pt.x + r, pt.y + r), Poi.MAP_LAYERS);
+        } catch (RuntimeException e) {
+            return null;
+        }
+        Place best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (Feature f : features) {
+            if (!(f.geometry() instanceof Point)) continue;
+            String name = firstNonEmpty(prop(f, "name:vi"), prop(f, "name"), prop(f, "name_en"));
+            if (name == null) continue;
+            Point g = (Point) f.geometry();
+            PointF s = map.getProjection().toScreenLocation(new LatLng(g.latitude(), g.longitude()));
+            double d = Math.hypot(s.x - pt.x, s.y - pt.y);
+            if (d < bestDist) {
+                bestDist = d;
+                best = new Place(name, g.latitude(), g.longitude(), null,
+                        Poi.fromTile(prop(f, "class"), prop(f, "subclass")));
+            }
+        }
+        return best;
+    }
+
+    /** Điểm đã lưu (ngôi sao) ở chỗ chạm, hoặc null. */
+    private Place savedAt(PointF pt) {
+        if (style == null) return null;
+        float r = dp(16);
+        try {
+            List<Feature> features = map.queryRenderedFeatures(
+                    new RectF(pt.x - r, pt.y - r, pt.x + r, pt.y + r), LAYER_SAVED);
+            List<Place> saved = Prefs.getSaved(this);
+            for (Feature f : features) {
+                Number i = f.hasNonNullValueForProperty("i") ? f.getNumberProperty("i") : null;
+                if (i != null && i.intValue() >= 0 && i.intValue() < saved.size()) return saved.get(i.intValue());
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return null;
+    }
+
+    private static String prop(Feature f, String key) {
+        try {
+            return f.hasNonNullValueForProperty(key) ? f.getStringProperty(key) : null;
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private static String firstNonEmpty(String... values) {
+        for (String v : values) if (v != null && !v.trim().isEmpty()) return v.trim();
+        return null;
     }
 
     /** Hiện chấm xanh vị trí của tôi (có hình quạt chỉ hướng điện thoại), giống Google Maps. */
@@ -334,17 +575,25 @@ public class MainActivity extends Activity implements TrackingService.Listener {
         }
     }
 
+    /** Di chuyển bản đồ tới một điểm, đặt điểm đó giữa phần bản đồ còn thấy (trừ ô tìm kiếm và bảng dưới). */
     private void moveCamera(double lat, double lng, double zoom) {
         if (map == null) return;
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat, lng), zoom), 600);
+        CameraPosition.Builder b = new CameraPosition.Builder()
+                .target(new LatLng(lat, lng))
+                .padding(0, topBar.getHeight(), 0, sheet.visibleHeight());
+        if (!Double.isNaN(zoom)) b.zoom(zoom);
+        map.animateCamera(CameraUpdateFactory.newCameraPosition(b.build()), 700);
     }
 
-    private static Bitmap drawableToBitmap(Drawable d) {
-        Bitmap bmp = Bitmap.createBitmap(d.getIntrinsicWidth(), d.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-        Canvas c = new Canvas(bmp);
-        d.setBounds(0, 0, c.getWidth(), c.getHeight());
-        d.draw(c);
-        return bmp;
+    /** Chỉ dịch bản đồ nếu điểm đang bị ô tìm kiếm hoặc bảng dưới che. */
+    private void ensureVisible(double lat, double lng) {
+        if (map == null) return;
+        PointF s = map.getProjection().toScreenLocation(new LatLng(lat, lng));
+        float top = topBar.getBottom() + dp(40);
+        float bottom = root.getHeight() - sheet.visibleHeight() - dp(24);
+        if (s.y < top || s.y > bottom || s.x < dp(24) || s.x > root.getWidth() - dp(24)) {
+            moveCamera(lat, lng, Double.NaN);
+        }
     }
 
     private void goToMyLocation() {
@@ -359,35 +608,146 @@ public class MainActivity extends Activity implements TrackingService.Listener {
         else toast(R.string.waiting_location);
     }
 
-    private void setDest(Place p) {
+    // ---------- Nơi đến ----------
+
+    /** zoom = NaN: giữ mức phóng hiện tại, chỉ dịch bản đồ nếu điểm bị che. */
+    private void selectPlace(Place p, double zoom) {
+        if (running) {
+            toast(R.string.stop_first);
+            return;
+        }
+        setDest(p, true);
+        if (Double.isNaN(zoom)) ensureVisible(p.lat, p.lng);
+        else moveCamera(p.lat, p.lng, zoom);
+    }
+
+    private void setDest(Place p, boolean animate) {
         dest = p;
         Prefs.setDest(this, p);
-        updateDestOnMap();
+        updateDestOnMap(animate);
         showDest();
-        if (p.name == null) reverseGeocode(p);
+        if (p.name == null || (p.address == null && !"gate".equals(p.kind))) findAddress(p);
+        loadGates(p);
     }
 
     private void clearDest() {
         dest = null;
         Prefs.setDest(this, null);
-        updateDestOnMap();
+        gateSeq++;
+        gatesParent = null;
+        gates.clear();
+        renderGates();
+        updateDestOnMap(false);
         showDest();
     }
 
     /** Vẽ lại ghim và vòng tròn vùng báo theo nơi đến và bán kính hiện tại. */
-    private void updateDestOnMap() {
+    private void updateDestOnMap(boolean animate) {
         if (style == null) return;
-        GeoJsonSource circle = style.getSourceAs(SRC_CIRCLE);
         GeoJsonSource pin = style.getSourceAs(SRC_PIN);
-        if (circle == null || pin == null) return;
+        if (pin == null) return;
+        if (pinAnim != null) pinAnim.cancel();
+        if (circleAnim != null) circleAnim.cancel();
         if (dest == null) {
-            FeatureCollection empty = FeatureCollection.fromFeatures(new ArrayList<>());
-            circle.setGeoJson(empty);
-            pin.setGeoJson(empty);
+            pin.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+            setCircle(0);
+            updatePulse();
             return;
         }
-        pin.setGeoJson(Feature.fromGeometry(Point.fromLngLat(dest.lng, dest.lat)));
-        circle.setGeoJson(Feature.fromGeometry(circlePolygon(dest.lat, dest.lng, Prefs.getRadius(this))));
+        Feature f = Feature.fromGeometry(Point.fromLngLat(dest.lng, dest.lat));
+        f.addStringProperty("icon", pinImage(dest.kind));
+        pin.setGeoJson(f);
+        if (animate) {
+            animatePin();
+            animateCircle();
+        } else {
+            setPinScale(1f);
+            setCircle(Prefs.getRadius(this));
+        }
+        updatePulse();
+    }
+
+    /** Ghim màu đỏ có biểu tượng loại địa điểm; mỗi loại vẽ một lần. */
+    private String pinImage(String kind) {
+        String id = "pin-" + (kind == null ? "pin" : Poi.kind(kind).id);
+        if (style != null && style.getImage(id) == null) style.addImage(id, Poi.pin(this, kind));
+        return id;
+    }
+
+    private void setCircle(double meters) {
+        if (style == null) return;
+        GeoJsonSource circle = style.getSourceAs(SRC_CIRCLE);
+        if (circle == null) return;
+        if (dest == null || meters <= 0) circle.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+        else circle.setGeoJson(Feature.fromGeometry(circlePolygon(dest.lat, dest.lng, meters)));
+    }
+
+    private void setPinScale(float scale) {
+        Layer l = style == null ? null : style.getLayer(LAYER_PIN);
+        if (l != null) {
+            l.setProperties(PropertyFactory.iconSize(Math.max(0.01f, scale)),
+                    PropertyFactory.iconOpacity(Math.max(0f, Math.min(1f, scale * 1.5f))));
+        }
+    }
+
+    /** Ghim "bật" lên từ mũi ghim, giống khi chọn địa điểm trên Google Maps. */
+    private void animatePin() {
+        ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
+        a.setDuration(420);
+        a.setInterpolator(new OvershootInterpolator(2.4f));
+        a.addUpdateListener(v -> setPinScale((float) v.getAnimatedValue()));
+        a.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                setPinScale(1f);
+            }
+        });
+        pinAnim = a;
+        a.start();
+    }
+
+    /** Vòng tròn vùng báo lan ra từ tâm. */
+    private void animateCircle() {
+        int r = Prefs.getRadius(this);
+        ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
+        a.setDuration(520);
+        a.setStartDelay(80);
+        a.setInterpolator(new DecelerateInterpolator(2f));
+        a.addUpdateListener(v -> setCircle(r * (float) v.getAnimatedValue()));
+        circleAnim = a;
+        setCircle(0);
+        a.start();
+    }
+
+    /** Khi đang theo dõi, vòng tròn nhấp nháy nhẹ để biết app đang chạy. */
+    private void updatePulse() {
+        boolean want = running && started && style != null && dest != null;
+        if (want && pulseAnim == null) {
+            Layer fill = style.getLayer(LAYER_FILL);
+            Layer line = style.getLayer(LAYER_LINE);
+            if (fill == null || line == null) return;
+            ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
+            a.setDuration(1100);
+            a.setRepeatCount(ValueAnimator.INFINITE);
+            a.setRepeatMode(ValueAnimator.REVERSE);
+            a.setInterpolator(new AccelerateDecelerateInterpolator());
+            a.addUpdateListener(v -> {
+                float t = (float) v.getAnimatedValue();
+                fill.setProperties(PropertyFactory.fillOpacity(0.08f + 0.18f * t));
+                line.setProperties(PropertyFactory.lineWidth(2f + 1.5f * t));
+            });
+            pulseAnim = a;
+            a.start();
+        } else if (!want && pulseAnim != null) {
+            pulseAnim.cancel();
+            pulseAnim = null;
+            if (style != null) {
+                Layer fill = style.getLayer(LAYER_FILL);
+                Layer line = style.getLayer(LAYER_LINE);
+                if (fill != null) fill.setProperties(PropertyFactory.fillOpacity(FILL_OPACITY));
+                if (line != null) line.setProperties(PropertyFactory.lineWidth(2f));
+            }
+        }
     }
 
     /** Hình tròn bán kính meters (mét) quanh một điểm, vẽ bằng 64 đoạn thẳng. */
@@ -404,52 +764,198 @@ public class MainActivity extends Activity implements TrackingService.Listener {
         return Polygon.fromLngLats(rings);
     }
 
+    /** Thu nhỏ bản đồ nếu vòng tròn vùng báo lớn hơn phần bản đồ đang thấy. */
+    private void fitCircle() {
+        if (map == null || dest == null) return;
+        double r = Prefs.getRadius(this);
+        double dLat = r / 111320.0;
+        double dLng = r / (111320.0 * Math.cos(Math.toRadians(dest.lat)));
+        LatLng ne = new LatLng(dest.lat + dLat, dest.lng + dLng);
+        LatLng sw = new LatLng(dest.lat - dLat, dest.lng - dLng);
+        PointF a = map.getProjection().toScreenLocation(ne);
+        PointF b = map.getProjection().toScreenLocation(sw);
+        int top = topBar.getBottom();
+        int bottom = root.getHeight() - sheet.visibleHeight();
+        boolean fits = a.y >= top && b.y <= bottom && b.x >= 0 && a.x <= root.getWidth();
+        if (fits) return;
+        LatLngBounds bounds = new LatLngBounds.Builder().include(ne).include(sw).build();
+        int pad = dp(24);
+        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, pad, top + pad, pad,
+                sheet.visibleHeight() + pad), 600);
+    }
+
     private void showDest() {
         if (dest == null) {
             txtSearchBar.setText(R.string.search_hint);
             txtSearchBar.setTextColor(getColor(R.color.text_light));
             btnClearDest.setVisibility(View.GONE);
+            destIconBg.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.bg_alt)));
+            destIcon.setImageResource(R.drawable.ic_place);
             txtDestName.setText(R.string.pick_dest_title);
+            txtDestMeta.setVisibility(View.GONE);
             txtDestAddr.setText(R.string.no_dest);
         } else {
-            txtSearchBar.setText(dest.label());
+            Poi.Kind k = Poi.kind(dest.kind);
+            String title = dest.name != null ? dest.name : getString(R.string.finding_address);
+            txtSearchBar.setText(title);
             txtSearchBar.setTextColor(getColor(R.color.text));
             btnClearDest.setVisibility(View.VISIBLE);
-            txtDestName.setText(dest.label());
-            txtDestAddr.setText(dest.address != null ? dest.address
-                    : String.format(java.util.Locale.US, "%.5f, %.5f", dest.lat, dest.lng));
+            destIconBg.setBackgroundTintList(ColorStateList.valueOf(k.color));
+            destIcon.setImageResource(k.glyph);
+            txtDestName.setText(title);
+            txtDestAddr.setText(dest.address != null ? dest.address : dest.coords());
+
+            SpannableStringBuilder meta = new SpannableStringBuilder();
+            if (k.label != null) {
+                meta.append(k.label);
+                meta.setSpan(new ForegroundColorSpan(Poi.textColor(k.color)), 0, meta.length(),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            Location me = lastKnownLocation();
+            if (me != null) {
+                float[] d = new float[1];
+                Location.distanceBetween(me.getLatitude(), me.getLongitude(), dest.lat, dest.lng, d);
+                if (meta.length() > 0) meta.append("  ·  ");
+                meta.append(getString(R.string.away, Fmt.distance(d[0])));
+            }
+            txtDestMeta.setText(meta);
+            txtDestMeta.setVisibility(meta.length() > 0 ? View.VISIBLE : View.GONE);
         }
-        btnStart.setEnabled(running || dest != null);
-        btnSave.setEnabled(dest != null);
+        updateButtons();
     }
 
-    private void reverseGeocode(Place p) {
+    private void updateButtons() {
+        setButtonEnabled(btnStart, running || dest != null);
+        setButtonEnabled(btnSave, dest != null);
+        setButtonEnabled(btnShare, dest != null);
+        updateSaveButton();
+    }
+
+    private static void setButtonEnabled(View v, boolean on) {
+        v.setEnabled(on);
+        float alpha = on ? 1f : 0.4f;
+        if (v.getAlpha() != alpha) v.animate().alpha(alpha).setDuration(150).start();
+    }
+
+    /** Tìm địa chỉ bằng chữ cho điểm vừa ghim (hoặc địa chỉ cho icon vừa chạm). */
+    private void findAddress(Place p) {
         io.execute(() -> {
+            Place named = null;
             try {
-                Place named = Geo.reverse(p.lat, p.lng);
-                if (named == null) return;
-                ui.post(() -> {
-                    // Chỉ cập nhật nếu người dùng chưa chọn nơi khác.
-                    if (dest != null && dest.samePlace(p) && dest.name == null) {
-                        dest = named;
-                        Prefs.setDest(this, dest);
-                        showDest();
-                    }
-                });
+                named = Geo.reverse(p.lat, p.lng);
             } catch (Exception ignored) {
-                // Giữ tên dạng toạ độ.
+                // Mất mạng: giữ toạ độ.
             }
+            Place result = named;
+            ui.post(() -> {
+                if (dest == null || !dest.samePlace(p)) return;
+                if (dest.name == null) {
+                    dest = result != null ? result : dest.withName(getString(R.string.dropped_pin));
+                } else if (dest.address == null && result != null && result.address != null) {
+                    dest = dest.withAddress(result.address);
+                } else {
+                    return;
+                }
+                Prefs.setDest(this, dest);
+                showDest();
+            });
         });
+    }
+
+    // ---------- Cổng / lối vào ----------
+
+    private void loadGates(Place p) {
+        if (gatesParent != null && ("gate".equals(p.kind) || gatesParent.samePlace(p))) {
+            renderGates();
+            return;
+        }
+        final int seq = ++gateSeq;
+        gatesParent = null;
+        gates.clear();
+        renderGates();
+        if (p.name == null || p.kind == null) return;
+        int radius;
+        if (BIG_KINDS.contains(p.kind)) radius = 300;
+        else if (SMALL_GATE_KINDS.contains(p.kind)) radius = 120;
+        else return;
+        io.execute(() -> {
+            List<Place> list;
+            try {
+                list = Geo.entrances(p, radius);
+            } catch (Exception e) {
+                return;
+            }
+            ui.post(() -> {
+                if (seq != gateSeq || dest == null || !dest.samePlace(p)) return;
+                gatesParent = p;
+                gates.clear();
+                gates.addAll(list);
+                renderGates();
+            });
+        });
+    }
+
+    private void renderGates() {
+        boolean show = dest != null && gatesParent != null && !gates.isEmpty();
+        if (show) {
+            gatesRow.removeAllViews();
+            gatesRow.addView(makeGateChip(gatesParent, true));
+            for (Place g : gates) gatesRow.addView(makeGateChip(g, false));
+        }
+        boolean visible = gatesBox.getVisibility() == View.VISIBLE;
+        if (show != visible) {
+            animateSheetChange();
+            gatesBox.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private View makeGateChip(Place g, boolean parent) {
+        boolean selected = dest != null && dest.samePlace(g);
+        LinearLayout chip = new LinearLayout(this);
+        chip.setOrientation(LinearLayout.HORIZONTAL);
+        chip.setGravity(Gravity.CENTER_VERTICAL);
+        chip.setBackgroundResource(selected ? R.drawable.bg_chip_selected : R.drawable.bg_chip);
+        chip.setPadding(dp(10), dp(7), dp(14), dp(7));
+        chip.setStateListAnimator(android.animation.AnimatorInflater.loadStateListAnimator(this, R.animator.press));
+
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(parent ? Poi.kind(g.kind).glyph : R.drawable.ic_g_door);
+        icon.setImageTintList(ColorStateList.valueOf(getColor(selected ? R.color.primary : R.color.text_light)));
+        chip.addView(icon, new LinearLayout.LayoutParams(dp(18), dp(18)));
+
+        TextView name = new TextView(this);
+        name.setText(g.label());
+        name.setMaxWidth(dp(170));
+        name.setSingleLine(true);
+        name.setEllipsize(TextUtils.TruncateAt.END);
+        name.setTextColor(getColor(selected ? R.color.on_primary_container : R.color.text));
+        name.setTextSize(14);
+        LinearLayout.LayoutParams nlp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        nlp.setMarginStart(dp(6));
+        chip.addView(name, nlp);
+
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMarginEnd(dp(8));
+        chip.setLayoutParams(lp);
+
+        chip.setOnClickListener(v -> {
+            if (gatesParent == null) return;
+            Place target = parent ? gatesParent
+                    : new Place(g.label() + " – " + gatesParent.label(), g.lat, g.lng, gatesParent.address, "gate");
+            selectPlace(target, Double.NaN);
+        });
+        return chip;
     }
 
     // ---------- Tìm kiếm (giống Google Maps) ----------
 
     private void setupSearch() {
-        ListView list = findViewById(R.id.listResults);
-        list.setAdapter(adapter);
-        list.setOnItemClickListener((parent, view, position, id) -> pickPlace(adapter.getItem(position)));
-        list.setOnItemLongClickListener((parent, view, position, id) -> {
-            if (adapter.getIcon(position) != R.drawable.ic_history) return false;
+        listResults.setAdapter(adapter);
+        listResults.setOnItemClickListener((parent, view, position, id) -> pickPlace(adapter.getItem(position)));
+        listResults.setOnItemLongClickListener((parent, view, position, id) -> {
+            if (adapter.getType(position) != T_HISTORY) return false;
             Place p = adapter.getItem(position);
             new AlertDialog.Builder(this)
                     .setMessage(getString(R.string.delete_saved, p.label()))
@@ -480,14 +986,15 @@ public class MainActivity extends Activity implements TrackingService.Listener {
             public void afterTextChanged(Editable s) {
                 ui.removeCallbacks(suggestTask);
                 searchSeq++;
-                boolean empty = s.toString().trim().isEmpty();
-                btnClearText.setVisibility(empty ? View.GONE : View.VISIBLE);
-                if (empty) {
+                String q = s.toString().trim();
+                btnClearText.setVisibility(q.isEmpty() ? View.GONE : View.VISIBLE);
+                if (q.isEmpty()) {
                     showHistory();
                 } else {
                     // Hiện ngay chỗ đã lưu / đã tìm khớp với chữ đang gõ, rồi mới hỏi mạng.
-                    showResults(s.toString().trim(), null, false, true);
-                    if (s.toString().trim().length() >= 2) ui.postDelayed(suggestTask, SUGGEST_DELAY_MS);
+                    List<Place> cached = cached(fold(q));
+                    showResults(q, cached, false, cached == null, false);
+                    if (q.length() >= 2 && cached == null) ui.postDelayed(suggestTask, SUGGEST_DELAY_MS);
                 }
             }
         });
@@ -503,63 +1010,93 @@ public class MainActivity extends Activity implements TrackingService.Listener {
     }
 
     private void openSearch() {
+        searchOpen = true;
+        searchPage.animate().cancel();
         searchPage.setVisibility(View.VISIBLE);
+        searchPage.setAlpha(0f);
+        searchPage.setTranslationY(dp(24));
+        searchPage.animate().alpha(1f).translationY(0f).setDuration(220)
+                .setInterpolator(new DecelerateInterpolator(1.5f)).start();
         edtSearch.setText("");
         showHistory();
+        listResults.scheduleLayoutAnimation();
         edtSearch.requestFocus();
         InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
         if (imm != null) edtSearch.post(() -> imm.showSoftInput(edtSearch, InputMethodManager.SHOW_IMPLICIT));
     }
 
     private void closeSearch() {
+        searchOpen = false;
         ui.removeCallbacks(suggestTask);
         searchSeq++;
         hideKeyboard();
-        searchPage.setVisibility(View.GONE);
+        searchPage.animate().cancel();
+        searchPage.animate().alpha(0f).translationY(dp(16)).setDuration(160)
+                .setInterpolator(new DecelerateInterpolator())
+                .withEndAction(() -> {
+                    if (!searchOpen) searchPage.setVisibility(View.GONE);
+                }).start();
     }
 
     private void showHistory() {
         List<Place> history = Prefs.getHistory(this);
         txtListTitle.setText(history.isEmpty() ? R.string.no_recent : R.string.recent);
+        adapter.setQuery(new String[0], lastKnownLocation());
         adapter.clear();
-        for (Place p : history) adapter.add(p, R.drawable.ic_history);
+        for (Place p : history) adapter.add(p, T_HISTORY);
         adapter.notifyDataSetChanged();
     }
 
-    /** submitted = người dùng bấm nút tìm trên bàn phím (khi đó được dùng thêm Nominatim). */
+    private List<Place> cached(String key) {
+        synchronized (searchCache) {
+            List<Place> full = searchCache.get(key + "|full");
+            return full != null ? full : searchCache.get(key);
+        }
+    }
+
+    /** Vị trí của bạn, hoặc giữa bản đồ nếu chưa có vị trí; để ưu tiên kết quả ở gần. */
+    private double[] searchBias() {
+        Location me = lastKnownLocation();
+        if (me != null) return new double[]{me.getLatitude(), me.getLongitude()};
+        if (map != null && map.getCameraPosition().target != null) {
+            LatLng t = map.getCameraPosition().target;
+            return new double[]{t.getLatitude(), t.getLongitude()};
+        }
+        return new double[]{Double.NaN, Double.NaN};
+    }
+
+    /** submitted = người dùng bấm nút tìm trên bàn phím (khi đó tìm thêm bằng Nominatim). */
     private void runSearch(boolean submitted) {
         String q = edtSearch.getText().toString().trim();
         if (q.isEmpty()) return;
         final int seq = ++searchSeq;
-        String key = normalize(q);
-        List<Place> cached;
+        String key = fold(q) + (submitted ? "|full" : "");
+        List<Place> hit;
         synchronized (searchCache) {
-            cached = searchCache.get(key);
+            hit = searchCache.get(key);
         }
-        if (cached != null && !(submitted && cached.isEmpty())) {
-            showResults(q, cached, false, false);
+        if (hit != null) {
+            showResults(q, hit, false, false, true);
             return;
         }
-        showResults(q, null, false, true);
+        showResults(q, cached(fold(q)), false, true, false);
 
-        Location me = lastKnownLocation();
-        double lat = me == null ? Double.NaN : me.getLatitude();
-        double lng = me == null ? Double.NaN : me.getLongitude();
+        double[] bias = searchBias();
+        Future<List<Place>> full = submitted ? io.submit(() -> Geo.search(q, bias[0], bias[1])) : null;
         io.execute(() -> {
-            List<Place> results;
+            List<Place> results = new ArrayList<>();
             boolean failed = false;
             try {
-                results = Geo.suggest(q, lat, lng);
+                results.addAll(Geo.suggest(q, bias[0], bias[1]));
             } catch (Exception e) {
-                results = new ArrayList<>();
                 failed = true;
             }
-            if (submitted && results.isEmpty()) {
+            if (full != null) {
                 try {
-                    results = Geo.search(q);
+                    merge(results, full.get(15, TimeUnit.SECONDS));
                     failed = false;
-                } catch (Exception e) {
-                    failed = true;
+                } catch (Exception ignored) {
+                    // Nominatim lỗi thì vẫn dùng kết quả của Photon.
                 }
             }
             if (!failed) {
@@ -567,34 +1104,51 @@ public class MainActivity extends Activity implements TrackingService.Listener {
                     searchCache.put(key, results);
                 }
             }
-            final List<Place> r = results;
-            final boolean f = failed;
+            boolean f = failed;
             ui.post(() -> {
-                if (seq != searchSeq || searchPage.getVisibility() != View.VISIBLE) return;
-                showResults(q, r, f, false);
+                if (seq != searchSeq || !searchOpen) return;
+                showResults(q, results, f, false, true);
             });
         });
+    }
+
+    /** Thêm kết quả mới, bỏ những chỗ trùng (cùng tên và gần nhau, hoặc gần như cùng một điểm). */
+    private static void merge(List<Place> into, List<Place> more) {
+        for (Place m : more) {
+            boolean dup = false;
+            for (Place p : into) {
+                float[] d = new float[1];
+                Location.distanceBetween(p.lat, p.lng, m.lat, m.lng, d);
+                if (d[0] < 30 || (d[0] < 400 && fold(p.label()).equals(fold(m.label())))) {
+                    dup = true;
+                    break;
+                }
+            }
+            if (!dup) into.add(m);
+        }
     }
 
     /**
      * Hiện danh sách: chỗ đã lưu và đã tìm khớp với chữ đang gõ (hiện ngay), sau đó là kết quả từ mạng.
      * online = null nghĩa là chưa có kết quả mạng; loading = đang chờ mạng.
      */
-    private void showResults(String query, List<Place> online, boolean failed, boolean loading) {
-        String key = normalize(query);
+    private void showResults(String query, List<Place> online, boolean failed, boolean loading, boolean animate) {
+        String[] words = words(query);
+        adapter.setQuery(words, lastKnownLocation());
         adapter.clear();
         for (Place p : Prefs.getSaved(this)) {
-            if (matches(p, key)) adapter.add(p, R.drawable.ic_star);
+            if (matches(p, words)) adapter.add(p, T_SAVED);
         }
         for (Place p : Prefs.getHistory(this)) {
-            if (matches(p, key) && !adapter.contains(p)) adapter.add(p, R.drawable.ic_history);
+            if (matches(p, words) && !adapter.contains(p)) adapter.add(p, T_HISTORY);
         }
         if (online != null) {
             for (Place p : online) {
-                if (!adapter.contains(p)) adapter.add(p, R.drawable.ic_place);
+                if (!adapter.contains(p)) adapter.add(p, T_RESULT);
             }
         }
         adapter.notifyDataSetChanged();
+        if (animate && online != null && !online.isEmpty()) listResults.scheduleLayoutAnimation();
 
         if (loading) txtListTitle.setText(R.string.searching);
         else if (!adapter.isEmpty()) txtListTitle.setText(R.string.results);
@@ -602,45 +1156,83 @@ public class MainActivity extends Activity implements TrackingService.Listener {
         else txtListTitle.setText(R.string.search_empty);
     }
 
-    private static boolean matches(Place p, String key) {
-        return normalize(p.label()).contains(key)
-                || (p.address != null && normalize(p.address).contains(key));
+    private static String[] words(String query) {
+        List<String> out = new ArrayList<>();
+        for (String w : fold(query).split("\\s+")) if (!w.isEmpty()) out.add(w);
+        return out.toArray(new String[0]);
     }
 
-    /** Bỏ dấu và viết thường, để gõ "benh vien" vẫn khớp "Bệnh viện". */
-    private static String normalize(String s) {
-        String n = Normalizer.normalize(s.toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
-                .replaceAll("\\p{M}+", "");
-        return n.replace('đ', 'd').trim();
+    private static boolean matches(Place p, String[] words) {
+        String hay = fold(p.label() + " " + (p.address == null ? "" : p.address));
+        for (String w : words) if (!hay.contains(w)) return false;
+        return true;
+    }
+
+    /**
+     * Bỏ dấu và viết thường, để gõ "benh vien" vẫn khớp "Bệnh viện".
+     * Giữ nguyên độ dài chuỗi để tô đậm được đúng chỗ khớp trong tên gốc.
+     */
+    static String fold(String s) {
+        StringBuilder b = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = Character.toLowerCase(s.charAt(i));
+            if (c == 'đ') {
+                b.append('d');
+                continue;
+            }
+            String d = Normalizer.normalize(String.valueOf(c), Normalizer.Form.NFD);
+            b.append(d.isEmpty() ? c : d.charAt(0));
+        }
+        return b.toString();
+    }
+
+    /** Tô đậm phần chữ khớp với từ đang gõ. */
+    private static CharSequence highlight(String text, String[] words) {
+        if (words.length == 0) return text;
+        SpannableString s = new SpannableString(text);
+        String f = fold(text);
+        for (String w : words) {
+            int i = f.indexOf(w);
+            if (i >= 0 && i + w.length() <= text.length()) {
+                s.setSpan(new StyleSpan(Typeface.BOLD), i, i + w.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+        }
+        return s;
     }
 
     private void pickPlace(Place p) {
         Prefs.addHistory(this, p);
         closeSearch();
-        setDest(p);
-        moveCamera(p.lat, p.lng, 16);
+        selectPlace(p, 17);
     }
 
     @Override
     @SuppressWarnings("deprecation")
     public void onBackPressed() {
-        if (searchPage.getVisibility() == View.VISIBLE) closeSearch();
+        if (searchOpen) closeSearch();
         else super.onBackPressed();
     }
 
-    /** Danh sách kết quả / gần đây: biểu tượng tròn, tên, địa chỉ. */
+    /** Danh sách kết quả / gần đây: icon tròn có màu theo loại, khoảng cách, tên, loại + địa chỉ. */
     private final class ResultsAdapter extends BaseAdapter {
         private final List<Place> items = new ArrayList<>();
-        private final List<Integer> icons = new ArrayList<>();
+        private final List<Integer> types = new ArrayList<>();
+        private String[] words = new String[0];
+        private Location me;
+
+        void setQuery(String[] w, Location location) {
+            words = w;
+            me = location;
+        }
 
         void clear() {
             items.clear();
-            icons.clear();
+            types.clear();
         }
 
-        void add(Place p, int icon) {
+        void add(Place p, int type) {
             items.add(p);
-            icons.add(icon);
+            types.add(type);
         }
 
         boolean contains(Place p) {
@@ -648,8 +1240,8 @@ public class MainActivity extends Activity implements TrackingService.Listener {
             return false;
         }
 
-        int getIcon(int position) {
-            return icons.get(position);
+        int getType(int position) {
+            return types.get(position);
         }
 
         @Override
@@ -673,16 +1265,51 @@ public class MainActivity extends Activity implements TrackingService.Listener {
                 view = LayoutInflater.from(MainActivity.this).inflate(R.layout.item_place, parent, false);
             }
             Place p = items.get(position);
-            ((ImageView) view.findViewById(R.id.rowIcon)).setImageResource(icons.get(position));
-            ((TextView) view.findViewById(R.id.rowTitle)).setText(p.label());
-            TextView sub = view.findViewById(R.id.rowSubtitle);
-            sub.setText(p.address == null ? "" : p.address);
-            sub.setVisibility(p.address == null ? View.GONE : View.VISIBLE);
+            int type = types.get(position);
+            View iconBg = view.findViewById(R.id.rowIconBg);
+            ImageView icon = view.findViewById(R.id.rowIcon);
+            Poi.Kind k = Poi.kind(p.kind);
+            if (type == T_SAVED) {
+                iconBg.setBackgroundTintList(ColorStateList.valueOf(Poi.SAVED));
+                icon.setImageResource(R.drawable.ic_g_star);
+            } else if (type == T_HISTORY) {
+                iconBg.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.bg_alt)));
+                icon.setImageResource(R.drawable.ic_history);
+            } else {
+                iconBg.setBackgroundTintList(ColorStateList.valueOf(k.color));
+                icon.setImageResource(k.glyph);
+            }
+
+            ((TextView) view.findViewById(R.id.rowTitle)).setText(highlight(p.label(), words));
+
+            SpannableStringBuilder sub = new SpannableStringBuilder();
+            if (k.label != null && !"pin".equals(k.id)) {
+                sub.append(k.label);
+                sub.setSpan(new ForegroundColorSpan(Poi.textColor(k.color)), 0, sub.length(),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            if (p.address != null) {
+                if (sub.length() > 0) sub.append(" · ");
+                sub.append(p.address);
+            }
+            TextView subtitle = view.findViewById(R.id.rowSubtitle);
+            subtitle.setText(sub);
+            subtitle.setVisibility(sub.length() == 0 ? View.GONE : View.VISIBLE);
+
+            TextView dist = view.findViewById(R.id.rowDistance);
+            if (me != null) {
+                float[] d = new float[1];
+                Location.distanceBetween(me.getLatitude(), me.getLongitude(), p.lat, p.lng, d);
+                dist.setText(Fmt.distance(d[0]));
+                dist.setVisibility(View.VISIBLE);
+            } else {
+                dist.setVisibility(View.GONE);
+            }
             return view;
         }
     }
 
-    // ---------- Địa điểm đã lưu ----------
+    // ---------- Địa điểm đã lưu / điểm đánh dấu ----------
 
     private void renderSaved() {
         List<Place> places = Prefs.getSaved(this);
@@ -694,6 +1321,25 @@ public class MainActivity extends Activity implements TrackingService.Listener {
             mapChips.addView(makeChip(places.get(i), i, true));
             searchChips.addView(makeChip(places.get(i), i, false));
         }
+        updateSavedOnMap();
+        updateSaveButton();
+    }
+
+    /** Các điểm đã lưu hiện trên bản đồ thành ngôi sao vàng kèm tên. */
+    private void updateSavedOnMap() {
+        if (style == null) return;
+        GeoJsonSource src = style.getSourceAs(SRC_SAVED);
+        if (src == null) return;
+        List<Place> places = Prefs.getSaved(this);
+        List<Feature> features = new ArrayList<>();
+        for (int i = 0; i < places.size(); i++) {
+            Place p = places.get(i);
+            Feature f = Feature.fromGeometry(Point.fromLngLat(p.lng, p.lat));
+            f.addStringProperty("name", p.label());
+            f.addNumberProperty("i", i);
+            features.add(f);
+        }
+        src.setGeoJson(FeatureCollection.fromFeatures(features));
     }
 
     /** Nút tròn dài có ngôi sao vàng, giống các nút "Nhà riêng", "Nhà hàng" của Google Maps. */
@@ -704,10 +1350,11 @@ public class MainActivity extends Activity implements TrackingService.Listener {
         chip.setBackgroundResource(onMap ? R.drawable.bg_map_chip : R.drawable.bg_chip);
         if (onMap) chip.setElevation(dp(3));
         chip.setPadding(dp(12), dp(8), dp(16), dp(8));
+        chip.setStateListAnimator(android.animation.AnimatorInflater.loadStateListAnimator(this, R.animator.press));
 
         ImageView star = new ImageView(this);
         star.setImageResource(R.drawable.ic_star);
-        chip.addView(star, new LinearLayout.LayoutParams(dp(20), dp(20)));
+        chip.addView(star, new LinearLayout.LayoutParams(dp(18), dp(18)));
 
         TextView name = new TextView(this);
         name.setText(p.label());
@@ -715,7 +1362,7 @@ public class MainActivity extends Activity implements TrackingService.Listener {
         name.setSingleLine(true);
         name.setEllipsize(TextUtils.TruncateAt.END);
         name.setTextColor(getColor(R.color.text));
-        name.setTextSize(15);
+        name.setTextSize(14);
         LinearLayout.LayoutParams nlp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         nlp.setMarginStart(dp(8));
@@ -731,9 +1378,8 @@ public class MainActivity extends Activity implements TrackingService.Listener {
                 toast(R.string.stop_first);
                 return;
             }
-            if (searchPage.getVisibility() == View.VISIBLE) closeSearch();
-            setDest(p);
-            moveCamera(p.lat, p.lng, 16);
+            if (searchOpen) closeSearch();
+            selectPlace(p, 17);
         });
         chip.setOnLongClickListener(v -> {
             new AlertDialog.Builder(this)
@@ -751,23 +1397,40 @@ public class MainActivity extends Activity implements TrackingService.Listener {
         return chip;
     }
 
-    private void saveCurrent() {
+    private int savedIndex(Place p) {
+        if (p == null) return -1;
+        List<Place> list = Prefs.getSaved(this);
+        for (int i = 0; i < list.size(); i++) if (list.get(i).samePlace(p)) return i;
+        return -1;
+    }
+
+    private void updateSaveButton() {
+        boolean saved = savedIndex(dest) >= 0;
+        if (saved) {
+            icSave.setImageResource(R.drawable.ic_star);
+            icSave.setImageTintList(null);
+            txtSave.setText(R.string.saved);
+        } else {
+            icSave.setImageResource(R.drawable.ic_star_border);
+            icSave.setImageTintList(ColorStateList.valueOf(getColor(R.color.primary)));
+            txtSave.setText(R.string.save);
+        }
+    }
+
+    private void onSaveClicked() {
         if (dest == null) return;
-        EditText input = new EditText(this);
-        input.setSingleLine(true);
-        input.setText(dest.label());
-        input.setSelectAllOnFocus(true);
-        FrameLayout wrap = new FrameLayout(this);
-        wrap.setPadding(dp(20), dp(8), dp(20), 0);
-        wrap.addView(input);
+        int idx = savedIndex(dest);
+        if (idx < 0) {
+            promptSaveMarker(dest, R.string.save_title);
+            return;
+        }
+        Place p = dest;
         new AlertDialog.Builder(this)
-                .setTitle(R.string.save_title)
-                .setView(wrap)
-                .setPositiveButton(R.string.ok, (d, w) -> {
-                    String name = input.getText().toString().trim();
-                    if (name.isEmpty()) return;
+                .setMessage(getString(R.string.unsave, Prefs.getSaved(this).get(idx).label()))
+                .setPositiveButton(R.string.remove, (d, w) -> {
                     List<Place> list = Prefs.getSaved(this);
-                    list.add(0, new Place(name, dest.lat, dest.lng, dest.address));
+                    int i = savedIndex(p);
+                    if (i >= 0) list.remove(i);
                     Prefs.setSaved(this, list);
                     renderSaved();
                 })
@@ -775,12 +1438,152 @@ public class MainActivity extends Activity implements TrackingService.Listener {
                 .show();
     }
 
+    /** Hỏi tên rồi lưu một điểm (hiện thành ngôi sao trên bản đồ và nút nhanh dưới ô tìm kiếm). */
+    private void promptSaveMarker(Place p, int titleRes) {
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setHint(R.string.marker_hint);
+        if (p.name != null) {
+            input.setText(p.name);
+            input.setSelectAllOnFocus(true);
+        }
+        FrameLayout wrap = new FrameLayout(this);
+        wrap.setPadding(dp(20), dp(8), dp(20), 0);
+        wrap.addView(input);
+
+        // Điểm chưa có tên / địa chỉ: tìm trong lúc người dùng gõ tên.
+        final Place[] resolved = {p};
+        if (p.name == null || p.address == null) {
+            io.execute(() -> {
+                try {
+                    Place named = Geo.reverse(p.lat, p.lng);
+                    if (named == null) return;
+                    ui.post(() -> {
+                        if (p.name == null) {
+                            resolved[0] = named;
+                            if (input.getText().length() == 0) {
+                                input.setText(named.label());
+                                input.selectAll();
+                            }
+                        } else {
+                            resolved[0] = p.withAddress(named.address);
+                        }
+                    });
+                } catch (Exception ignored) {
+                }
+            });
+        }
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(titleRes)
+                .setView(wrap)
+                .setPositiveButton(R.string.ok, (d, w) -> {
+                    String name = input.getText().toString().trim();
+                    Place r = resolved[0];
+                    if (name.isEmpty()) name = r.name != null ? r.name : getString(R.string.marker_default);
+                    String kind = r.kind == null || "pin".equals(r.kind) ? "saved" : r.kind;
+                    List<Place> list = Prefs.getSaved(this);
+                    list.add(0, new Place(name, p.lat, p.lng, r.address, kind));
+                    Prefs.setSaved(this, list);
+                    renderSaved();
+                    popView(icSave);
+                    Toast.makeText(this, getString(R.string.marker_added, name), Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        }
+        dialog.show();
+        input.requestFocus();
+    }
+
+    private void shareDest() {
+        if (dest == null) return;
+        String url = String.format(Locale.US, "https://www.google.com/maps/search/?api=1&query=%.6f,%.6f",
+                dest.lat, dest.lng);
+        String text = dest.label() + (dest.address != null ? "\n" + dest.address : "") + "\n" + url;
+        Intent i = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text);
+        try {
+            startActivity(Intent.createChooser(i, getString(R.string.share)));
+        } catch (RuntimeException ignored) {
+        }
+    }
+
+    /** Nảy nhẹ một view để báo vừa có thay đổi. */
+    private static void popView(View v) {
+        v.animate().cancel();
+        v.setScaleX(0.6f);
+        v.setScaleY(0.6f);
+        v.animate().scaleX(1f).scaleY(1f).setDuration(350).setInterpolator(new OvershootInterpolator(3f)).start();
+    }
+
+    // ---------- Bán kính báo: 10 m – 3 km, mỗi nấc 10 m ----------
+
+    private void setupRadius() {
+        int r = Prefs.getRadius(this);
+        seekRadius.setMax((Prefs.RADIUS_MAX - Prefs.RADIUS_MIN) / Prefs.RADIUS_STEP);
+        seekRadius.setProgress((r - Prefs.RADIUS_MIN) / Prefs.RADIUS_STEP);
+        txtRadius.setText(Fmt.radius(r));
+        seekRadius.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
+                int meters = Prefs.RADIUS_MIN + progress * Prefs.RADIUS_STEP;
+                txtRadius.setText(Fmt.radius(meters));
+                Prefs.setRadius(MainActivity.this, meters);
+                if (circleAnim != null) circleAnim.cancel();
+                setCircle(dest == null ? 0 : meters);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar s) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar s) {
+                fitCircle();
+            }
+        });
+        setupStepButton(findViewById(R.id.btnMinus), -1);
+        setupStepButton(findViewById(R.id.btnPlus), 1);
+    }
+
+    /** Bấm: đổi 10 m. Giữ: đổi liên tục. */
+    @SuppressWarnings("ClickableViewAccessibility")
+    private void setupStepButton(View b, int delta) {
+        Runnable[] repeat = new Runnable[1];
+        boolean[] repeating = {false};
+        repeat[0] = () -> {
+            seekRadius.setProgress(seekRadius.getProgress() + delta);
+            ui.postDelayed(repeat[0], 60);
+        };
+        b.setOnClickListener(v -> {
+            seekRadius.setProgress(seekRadius.getProgress() + delta);
+            fitCircle();
+        });
+        b.setOnLongClickListener(v -> {
+            repeating[0] = true;
+            ui.post(repeat[0]);
+            return true;
+        });
+        b.setOnTouchListener((v, e) -> {
+            int action = e.getActionMasked();
+            if ((action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) && repeating[0]) {
+                repeating[0] = false;
+                ui.removeCallbacks(repeat[0]);
+                fitCircle();
+            }
+            return false;
+        });
+    }
+
     // ---------- Kiểu báo: chuông + rung, hoặc chỉ rung ----------
 
     private void showAlertMode() {
         if (Prefs.vibrateOnly(this)) {
+            icAlert.setImageResource(R.drawable.ic_vibration);
             txtAlertMode.setText(R.string.alert_vibrate_only);
         } else {
+            icAlert.setImageResource(R.drawable.ic_bell);
             txtAlertMode.setText(getString(R.string.alert_sound_vibrate) + " · " + ringtoneTitle());
         }
     }
@@ -931,15 +1734,26 @@ public class MainActivity extends Activity implements TrackingService.Listener {
 
     @Override
     public void onStatus(TrackingService.Status s) {
+        boolean changed = running != s.running;
         running = s.running;
-        if (running) {
-            btnStart.setText(R.string.stop);
-            btnStart.setBackgroundResource(R.drawable.bg_btn_stop);
-        } else {
-            btnStart.setText(R.string.start);
-            btnStart.setBackgroundResource(R.drawable.bg_btn_primary);
+        if (changed) {
+            animateSheetChange();
+            statsRow.setVisibility(running ? View.VISIBLE : View.GONE);
+            if (running) {
+                btnStart.setBackgroundResource(R.drawable.bg_btn_stop);
+                icStart.setImageResource(R.drawable.ic_stop_circle);
+                txtStart.setText(R.string.stop);
+                // Thu gọn bảng để thấy bản đồ; vẫn thấy khoảng cách và nút dừng.
+                sheet.collapse();
+            } else {
+                btnStart.setBackgroundResource(R.drawable.bg_btn_primary);
+                icStart.setImageResource(R.drawable.ic_navigation);
+                txtStart.setText(R.string.start);
+            }
+            popView(icStart);
+            updatePulse();
         }
-        btnStart.setEnabled(running || dest != null);
+        setButtonEnabled(btnStart, running || dest != null);
         if (running && s.distance >= 0) {
             txtDistance.setText(Fmt.distance(s.distance));
             String eta = Fmt.duration(s.etaSeconds);
@@ -963,10 +1777,14 @@ public class MainActivity extends Activity implements TrackingService.Listener {
     protected void onStart() {
         super.onStart();
         mapView.onStart();
+        started = true;
+        updatePulse();
     }
 
     @Override
     protected void onStop() {
+        started = false;
+        updatePulse();
         mapView.onStop();
         super.onStop();
     }
@@ -992,6 +1810,9 @@ public class MainActivity extends Activity implements TrackingService.Listener {
 
     @Override
     protected void onDestroy() {
+        if (pinAnim != null) pinAnim.cancel();
+        if (circleAnim != null) circleAnim.cancel();
+        if (pulseAnim != null) pulseAnim.cancel();
         ui.removeCallbacksAndMessages(null);
         io.shutdownNow();
         mapView.onDestroy();
