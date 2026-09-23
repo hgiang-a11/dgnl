@@ -214,7 +214,7 @@ public class TrackingService extends Service implements LocationListener {
     private void startAlarm(float distance) {
         String message = getString(R.string.alarm_msg, Fmt.distance(distance), dest.label());
 
-        playAlarmSound();
+        if (!Prefs.vibrateOnly(this)) playAlarmSound();
         vibrate();
 
         Intent alarmIntent = new Intent(this, AlarmActivity.class)
@@ -248,10 +248,16 @@ public class TrackingService extends Service implements LocationListener {
 
     private void playAlarmSound() {
         stopAlarmSound();
-        Uri uri = RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM);
+        Uri uri = Prefs.getRingtone(this);
+        if (uri == null) uri = RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM);
         if (uri == null) uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
         if (uri == null) uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
-        if (uri == null) uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        startPlayer(uri);
+        // Nhạc đã chọn không phát được (ví dụ file đã bị xoá) thì dùng chuông mặc định.
+        if (player == null) startPlayer(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM));
+    }
+
+    private void startPlayer(Uri uri) {
         if (uri == null) return;
         try {
             player = new MediaPlayer();
@@ -261,7 +267,17 @@ public class TrackingService extends Service implements LocationListener {
             player.prepare();
             player.start();
         } catch (Exception e) {
-            stopAlarmSound();
+            releasePlayer();
+        }
+    }
+
+    private void releasePlayer() {
+        if (player != null) {
+            try {
+                player.release();
+            } catch (RuntimeException ignored) {
+            }
+            player = null;
         }
     }
 
@@ -271,8 +287,7 @@ public class TrackingService extends Service implements LocationListener {
                 player.stop();
             } catch (RuntimeException ignored) {
             }
-            player.release();
-            player = null;
+            releasePlayer();
         }
         if (vibrator != null) {
             vibrator.cancel();

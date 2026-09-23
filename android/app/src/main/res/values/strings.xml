@@ -15,7 +15,13 @@
     <string name="no_recent">Chưa có tìm kiếm nào gần đây</string>
     <string name="clear">Xoá</string>
     <string name="back">Quay lại</string>
-    <string name="attribution">© OpenStreetMap © CARTO</string>
+    <string name="attribution">© OpenFreeMap © OpenStreetMap</string>
+    <string name="alert_type">Kiểu báo</string>
+    <string name="alert_sound_vibrate">Chuông + rung</string>
+    <string name="alert_vibrate_only">Chỉ rung</string>
+    <string name="alert_pick_ringtone">Chọn nhạc chuông…</string>
+    <string name="alert_default_ringtone">Chuông mặc định</string>
+    <string name="alert_dialog_title">Khi sắp tới nơi</string>
     <string name="alert_when">Báo khi còn</string>
     <string name="distance">Khoảng cách</string>
     <string name="eta">Dự kiến tới trong</string>

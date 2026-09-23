@@ -15,6 +15,10 @@ android {
         targetSdk 34
         versionCode buildNumber
         versionName "1.0.${buildNumber}"
+        // Chỉ giữ bản cho điện thoại thật (ARM) để file APK nhẹ hơn.
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
     }
 
     // Khoá ký app dùng chung cho mọi bản build, để cập nhật không phải gỡ app cũ.
@@ -50,5 +54,5 @@ android {
 }
 
 dependencies {
-    implementation 'org.osmdroid:osmdroid-android:6.1.20'
+    implementation 'org.maplibre.gl:android-sdk:13.6.1'
 }

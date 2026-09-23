@@ -14,10 +14,11 @@ App báo thức theo vị trí: chọn nơi đến, chọn khoảng cách, app s
 - Chạm lên bản đồ hoặc gõ tên nơi đến rồi bấm **Tìm**.
 - Kéo thanh trượt để chọn báo khi còn bao xa (100 m – 3 km).
 - Bấm **Bắt đầu theo dõi**, rồi có thể tắt màn hình.
+- Bấm **Kiểu báo** để chọn "Chuông + rung", "Chỉ rung", hoặc đổi nhạc chuông.
 - Bấm **☆ Lưu** để lưu chỗ hay đi. Nhấn giữ vào chỗ đã lưu để xoá.
 
 ## Ghi chú kỹ thuật
 
-- Viết bằng Java, không cần Google Play Services. Bản đồ dùng OpenStreetMap (osmdroid), tìm địa chỉ dùng Nominatim.
+- Viết bằng Java, không cần Google Play Services. Bản đồ dạng vẽ (vector) dùng MapLibre + OpenFreeMap (miễn phí, không cần mã đăng ký), dữ liệu OpenStreetMap. Tìm địa chỉ dùng Photon (gợi ý khi gõ) và Nominatim.
 - File APK được GitHub Actions tự build mỗi khi thư mục `android/` thay đổi (xem `.github/workflows/android-apk.yml`).
 - Khoá ký app (`app/saptoi.keystore`) được để chung trong repo để mọi bản build cài đè lên nhau được. Nếu muốn đưa lên CH Play, hãy tạo khoá mới và giữ bí mật.

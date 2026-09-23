@@ -2,6 +2,7 @@ package com.saptoi.app;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.Uri;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -18,6 +19,8 @@ public final class Prefs {
     private static final String KEY_SAVED = "saved";
     private static final String KEY_HISTORY = "history";
     private static final int MAX_HISTORY = 15;
+    private static final String KEY_VIBRATE_ONLY = "vibrate_only";
+    private static final String KEY_RINGTONE = "ringtone";
     private static final String KEY_ASKED_BATTERY = "asked_battery";
     private static final int MAX_SAVED = 12;
 
@@ -100,6 +103,25 @@ public final class Prefs {
         } catch (JSONException ignored) {
         }
         sp(c).edit().putString(key, arr.toString()).apply();
+    }
+
+    /** true: chỉ rung, không phát chuông. */
+    public static boolean vibrateOnly(Context c) {
+        return sp(c).getBoolean(KEY_VIBRATE_ONLY, false);
+    }
+
+    public static void setVibrateOnly(Context c, boolean v) {
+        sp(c).edit().putBoolean(KEY_VIBRATE_ONLY, v).apply();
+    }
+
+    /** Nhạc chuông đã chọn, hoặc null để dùng chuông báo thức mặc định của máy. */
+    public static Uri getRingtone(Context c) {
+        String s = sp(c).getString(KEY_RINGTONE, null);
+        return s == null ? null : Uri.parse(s);
+    }
+
+    public static void setRingtone(Context c, Uri uri) {
+        sp(c).edit().putString(KEY_RINGTONE, uri == null ? null : uri.toString()).apply();
     }
 
     public static boolean askedBattery(Context c) {

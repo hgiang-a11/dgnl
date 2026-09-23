@@ -122,8 +122,8 @@ public final class Geo {
     private static String get(String url) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setRequestProperty("User-Agent", USER_AGENT);
-        conn.setConnectTimeout(10000);
-        conn.setReadTimeout(15000);
+        conn.setConnectTimeout(6000);
+        conn.setReadTimeout(8000);
         try (InputStream in = conn.getInputStream()) {
             ByteArrayOutputStream buf = new ByteArrayOutputStream();
             byte[] b = new byte[8192];
