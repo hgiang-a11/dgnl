@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="theme-color" content="#0EA5E9">
+    <title>Sắp Tới Nơi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #0EA5E9;
+            --primary-dark: #0284C7;
+            --success: #10B981;
+            --danger: #EF4444;
+            --text: #0F172A;
+            --text-light: #475569;
+            --bg: #FFFFFF;
+            --bg-alt: #F8FAFC;
+            --border: #E2E8F0;
+            --radius: 16px;
+            --shadow: 0 8px 24px rgba(2, 6, 23, 0.12);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --text: #F1F5F9;
+                --text-light: #94A3B8;
+                --bg: #1E293B;
+                --bg-alt: #0F172A;
+                --border: #334155;
+            }
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-alt);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #map { flex: 1; min-height: 200px; }
+
+        .panel {
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 -4px 16px rgba(2, 6, 23, 0.08);
+        }
+
+        .search { display: flex; gap: 8px; position: relative; }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px;
+            background: var(--bg-alt);
+            color: var(--text);
+        }
+
+        .results {
+            position: absolute;
+            left: 0; right: 0; bottom: 100%;
+            margin-bottom: 6px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            max-height: 240px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .results div {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .results div:last-child { border-bottom: none; }
+
+        button {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--bg-alt);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+        button.stop { background: var(--danger); color: #fff; border-color: var(--danger); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-light); }
+        .row input[type="range"] { flex: 1; }
+        .row strong { color: var(--text); min-width: 64px; text-align: right; }
+
+        .dest { font-size: 14px; color: var(--text-light); }
+        .dest b { color: var(--text); }
+
+        .status {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .stat {
+            background: var(--bg-alt);
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+
+        .stat span { display: block; font-size: 12px; color: var(--text-light); }
+        .stat b { font-size: 22px; }
+
+        .saved { display: flex; gap: 6px; flex-wrap: wrap; }
+        .saved button { padding: 6px 10px; font-size: 13px; font-weight: 500; }
+
+        .note { font-size: 12px; color: var(--text-light); line-height: 1.4; }
+
+        /* Màn hình báo thức khi sắp tới */
+        .alarm {
+            position: fixed;
+            inset: 0;
+            background: var(--success);
+            color: #fff;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 24px;
+            text-align: center;
+            z-index: 5000;
+            animation: pulse 1s infinite alternate;
+        }
+
+        .alarm h1 { font-size: 36px; }
+        .alarm p { font-size: 18px; }
+        .alarm button { background: #fff; color: var(--success); font-size: 20px; padding: 16px 32px; border: none; }
+
+        @keyframes pulse { from { background: #10B981; } to { background: #059669; } }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div class="panel">
+        <div class="search">
+            <input type="text" id="q" placeholder="Tìm nơi đến, hoặc chạm lên bản đồ...">
+            <button id="btnSearch">Tìm</button>
+            <div class="results" id="results"></div>
+        </div>
+
+        <div class="dest" id="destText">Chưa chọn nơi đến.</div>
+
+        <div class="saved" id="saved"></div>
+
+        <div class="row">
+            Báo khi còn
+            <input type="range" id="radius" min="100" max="3000" step="100" value="500">
+            <strong id="radiusText">500 m</strong>
+        </div>
+
+        <div class="status">
+            <div class="stat"><span>Khoảng cách</span><b id="dist">–</b></div>
+            <div class="stat"><span>Dự kiến tới trong</span><b id="eta">–</b></div>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+            <button class="primary" id="btnStart" style="flex:1" disabled>Bắt đầu theo dõi</button>
+            <button id="btnSave" disabled>☆ Lưu</button>
+        </div>
+
+        <p class="note">
+            Mẹo: giữ màn hình mở trong lúc đi (app sẽ tự giữ màn hình sáng).
+            Trình duyệt trên điện thoại thường ngừng lấy vị trí khi bạn tắt màn hình hoặc chuyển sang app khác.
+        </p>
+    </div>
+
+    <div class="alarm" id="alarm">
+        <h1>Sắp tới nơi rồi!</h1>
+        <p id="alarmText"></p>
+        <button id="btnStopAlarm">Tôi biết rồi</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        const STORAGE_KEY = 'sapToi.saved';
+
+        const $ = (id) => document.getElementById(id);
+
+        const state = {
+            dest: null,          // { lat, lng, name }
+            watchId: null,
+            alarmed: false,
+            lastPos: null,       // { lat, lng, t }
+            speed: null,         // m/s, làm mượt
+            wakeLock: null,
+            audioCtx: null,
+            beepTimer: null,
+        };
+
+        // ---------- Bản đồ ----------
+        const map = L.map('map', { zoomControl: false }).setView([10.7769, 106.7009], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap',
+        }).addTo(map);
+
+        let destMarker = null;
+        let destCircle = null;
+        let meMarker = null;
+
+        map.on('click', (e) => setDest(e.latlng.lat, e.latlng.lng, null));
+
+        // Hiện vị trí hiện tại ngay khi mở app
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (p) => {
+                    updateMe(p.coords.latitude, p.coords.longitude);
+                    map.setView([p.coords.latitude, p.coords.longitude], 15);
+                },
+                () => {},
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        function updateMe(lat, lng) {
+            if (!meMarker) {
+                meMarker = L.circleMarker([lat, lng], {
+                    radius: 8, color: '#fff', weight: 3, fillColor: '#0EA5E9', fillOpacity: 1,
+                }).addTo(map);
+            } else {
+                meMarker.setLatLng([lat, lng]);
+            }
+        }
+
+        function radius() {
+            return Number($('radius').value);
+        }
+
+        function setDest(lat, lng, name) {
+            state.dest = { lat, lng, name: name || `${lat.toFixed(5)}, ${lng.toFixed(5)}` };
+            if (destMarker) destMarker.setLatLng([lat, lng]);
+            else destMarker = L.marker([lat, lng]).addTo(map);
+
+            if (destCircle) destCircle.setLatLng([lat, lng]).setRadius(radius());
+            else destCircle = L.circle([lat, lng], {
+                radius: radius(), color: '#10B981', fillOpacity: 0.12,
+            }).addTo(map);
+
+            $('destText').innerHTML = `Nơi đến: <b>${escapeHtml(state.dest.name)}</b>`;
+            $('btnStart').disabled = false;
+            $('btnSave').disabled = false;
+            state.alarmed = false;
+
+            if (!name) reverseGeocode(lat, lng);
+        }
+
+        $('radius').addEventListener('input', () => {
+            const r = radius();
+            $('radiusText').textContent = r >= 1000 ? `${(r / 1000).toFixed(1)} km` : `${r} m`;
+            if (destCircle) destCircle.setRadius(r);
+            state.alarmed = false;
+        });
+
+        // ---------- Tìm địa chỉ (Nominatim của OpenStreetMap, miễn phí) ----------
+        async function search() {
+            const q = $('q').value.trim();
+            if (!q) return;
+            const box = $('results');
+            box.style.display = 'block';
+            box.innerHTML = '<div>Đang tìm...</div>';
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=vn&accept-language=vi&q=${encodeURIComponent(q)}`;
+                const res = await fetch(url);
+                const items = await res.json();
+                if (!items.length) {
+                    box.innerHTML = '<div>Không tìm thấy. Thử gõ cụ thể hơn, hoặc chạm lên bản đồ.</div>';
+                    return;
+                }
+                box.innerHTML = '';
+                items.forEach((it) => {
+                    const d = document.createElement('div');
+                    d.textContent = it.display_name;
+                    d.onclick = () => {
+                        const lat = Number(it.lat), lng = Number(it.lon);
+                        setDest(lat, lng, it.display_name.split(',').slice(0, 2).join(','));
+                        map.setView([lat, lng], 15);
+                        box.style.display = 'none';
+                    };
+                    box.appendChild(d);
+                });
+            } catch (e) {
+                box.innerHTML = '<div>Lỗi mạng, thử lại sau.</div>';
+            }
+        }
+
+        async function reverseGeocode(lat, lng) {
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=json&accept-language=vi&lat=${lat}&lon=${lng}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.display_name && state.dest && state.dest.lat === lat) {
+                    state.dest.name = data.display_name.split(',').slice(0, 2).join(',');
+                    $('destText').innerHTML = `Nơi đến: <b>${escapeHtml(state.dest.name)}</b>`;
+                }
+            } catch (e) { /* giữ tên dạng toạ độ */ }
+        }
+
+        $('btnSearch').onclick = search;
+        $('q').addEventListener('keydown', (e) => { if (e.key === 'Enter') search(); });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search')) $('results').style.display = 'none';
+        });
+
+        // ---------- Địa điểm đã lưu ----------
+        function loadSaved() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+            catch (e) { return []; }
+        }
+
+        function renderSaved() {
+            const box = $('saved');
+            box.innerHTML = '';
+            loadSaved().forEach((p, i) => {
+                const b = document.createElement('button');
+                b.textContent = '★ ' + p.name.slice(0, 24);
+                b.onclick = () => { setDest(p.lat, p.lng, p.name); map.setView([p.lat, p.lng], 15); };
+                b.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    if (confirm(`Xoá "${p.name}" khỏi danh sách?`)) {
+                        const list = loadSaved();
+                        list.splice(i, 1);
+                        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (err) {}
+                        renderSaved();
+                    }
+                };
+                box.appendChild(b);
+            });
+        }
+
+        $('btnSave').onclick = () => {
+            if (!state.dest) return;
+            const name = prompt('Đặt tên cho địa điểm này:', state.dest.name);
+            if (!name) return;
+            const list = loadSaved();
+            list.unshift({ lat: state.dest.lat, lng: state.dest.lng, name });
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0, 8))); } catch (e) {}
+            renderSaved();
+        };
+
+        renderSaved();
+
+        // ---------- Theo dõi vị trí ----------
+        function distanceM(a, b) {
+            const R = 6371000;
+            const toRad = (x) => x * Math.PI / 180;
+            const dLat = toRad(b.lat - a.lat);
+            const dLng = toRad(b.lng - a.lng);
+            const h = Math.sin(dLat / 2) ** 2 +
+                Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+            return 2 * R * Math.asin(Math.sqrt(h));
+        }
+
+        function fmtDist(m) {
+            return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
+        }
+
+        function fmtTime(sec) {
+            if (!isFinite(sec) || sec <= 0) return '–';
+            const min = Math.round(sec / 60);
+            if (min < 1) return '< 1 phút';
+            if (min < 60) return `${min} phút`;
+            return `${Math.floor(min / 60)} giờ ${min % 60} phút`;
+        }
+
+        function onPosition(p) {
+            const me = { lat: p.coords.latitude, lng: p.coords.longitude, t: p.timestamp };
+            updateMe(me.lat, me.lng);
+
+            // Tốc độ: ưu tiên số của GPS, nếu không có thì tự tính từ 2 lần đo
+            let v = p.coords.speed;
+            if ((v == null || isNaN(v)) && state.lastPos) {
+                const dt = (me.t - state.lastPos.t) / 1000;
+                if (dt > 0) v = distanceM(state.lastPos, me) / dt;
+            }
+            if (v != null && !isNaN(v)) {
+                state.speed = state.speed == null ? v : state.speed * 0.7 + v * 0.3;
+            }
+            state.lastPos = me;
+
+            const d = distanceM(me, state.dest);
+            $('dist').textContent = fmtDist(d);
+            $('eta').textContent = state.speed > 0.5 ? fmtTime(d / state.speed) : '–';
+
+            if (!state.alarmed && d <= radius()) {
+                state.alarmed = true;
+                triggerAlarm(d);
+            }
+        }
+
+        async function start() {
+            if (!navigator.geolocation) {
+                alert('Máy của bạn không hỗ trợ định vị.');
+                return;
+            }
+
+            // Xin quyền hiện thông báo
+            if ('Notification' in window && Notification.permission === 'default') {
+                try { await Notification.requestPermission(); } catch (e) {}
+            }
+
+            // Mở khoá âm thanh (trình duyệt chỉ cho phát tiếng sau khi người dùng bấm)
+            try {
+                state.audioCtx = state.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                await state.audioCtx.resume();
+            } catch (e) {}
+
+            await keepScreenOn();
+
+            state.alarmed = false;
+            state.lastPos = null;
+            state.speed = null;
+            state.watchId = navigator.geolocation.watchPosition(onPosition, (err) => {
+                $('dist').textContent = 'Lỗi';
+                if (err.code === err.PERMISSION_DENIED) {
+                    alert('Bạn cần cho phép app dùng vị trí thì mới báo được.');
+                    stop();
+                }
+            }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+
+            $('btnStart').textContent = 'Dừng theo dõi';
+            $('btnStart').className = 'stop';
+            $('btnStart').style.flex = '1';
+        }
+
+        function stop() {
+            if (state.watchId != null) navigator.geolocation.clearWatch(state.watchId);
+            state.watchId = null;
+            if (state.wakeLock) { state.wakeLock.release().catch(() => {}); state.wakeLock = null; }
+            $('btnStart').textContent = 'Bắt đầu theo dõi';
+            $('btnStart').className = 'primary';
+            $('dist').textContent = '–';
+            $('eta').textContent = '–';
+        }
+
+        $('btnStart').onclick = () => (state.watchId == null ? start() : stop());
+
+        // Giữ màn hình luôn sáng để trình duyệt không ngừng lấy vị trí
+        async function keepScreenOn() {
+            try {
+                if ('wakeLock' in navigator) state.wakeLock = await navigator.wakeLock.request('screen');
+            } catch (e) {}
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && state.watchId != null) keepScreenOn();
+        });
+
+        // ---------- Báo động ----------
+        function triggerAlarm(d) {
+            const msg = `Còn khoảng ${fmtDist(d)} nữa là tới ${state.dest.name}.`;
+            $('alarmText').textContent = msg;
+            $('alarm').style.display = 'flex';
+
+            if (navigator.vibrate) navigator.vibrate([600, 300, 600, 300, 600]);
+
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    new Notification('Sắp tới nơi rồi!', { body: msg, requireInteraction: true });
+                } catch (e) { /* một số điện thoại chỉ cho thông báo qua service worker */ }
+            }
+
+            beep();
+            state.beepTimer = setInterval(() => {
+                beep();
+                if (navigator.vibrate) navigator.vibrate([600, 300, 600]);
+            }, 1500);
+        }
+
+        function beep() {
+            const ctx = state.audioCtx;
+            if (!ctx) return;
+            [0, 0.25, 0.5].forEach((offset) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.frequency.value = 880;
+                gain.gain.value = 0.3;
+                osc.connect(gain).connect(ctx.destination);
+                osc.start(ctx.currentTime + offset);
+                osc.stop(ctx.currentTime + offset + 0.15);
+            });
+        }
+
+        $('btnStopAlarm').onclick = () => {
+            clearInterval(state.beepTimer);
+            if (navigator.vibrate) navigator.vibrate(0);
+            $('alarm').style.display = 'none';
+            stop();
+        };
+
+        function escapeHtml(s) {
+            return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+    </script>
+</body>
+</html>
