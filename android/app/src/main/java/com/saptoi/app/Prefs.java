@@ -16,6 +16,8 @@ public final class Prefs {
     private static final String KEY_DEST = "dest";
     private static final String KEY_RADIUS = "radius";
     private static final String KEY_SAVED = "saved";
+    private static final String KEY_HISTORY = "history";
+    private static final int MAX_HISTORY = 15;
     private static final String KEY_ASKED_BATTERY = "asked_battery";
     private static final int MAX_SAVED = 12;
 
@@ -52,22 +54,52 @@ public final class Prefs {
     }
 
     public static List<Place> getSaved(Context c) {
+        return readList(c, KEY_SAVED);
+    }
+
+    public static void setSaved(Context c, List<Place> list) {
+        writeList(c, KEY_SAVED, list, MAX_SAVED);
+    }
+
+    /** Các nơi đã chọn gần đây, mới nhất ở đầu. */
+    public static List<Place> getHistory(Context c) {
+        return readList(c, KEY_HISTORY);
+    }
+
+    public static void addHistory(Context c, Place p) {
+        List<Place> list = getHistory(c);
+        for (int i = list.size() - 1; i >= 0; i--) {
+            if (list.get(i).samePlace(p)) list.remove(i);
+        }
+        list.add(0, p);
+        writeList(c, KEY_HISTORY, list, MAX_HISTORY);
+    }
+
+    public static void removeHistory(Context c, Place p) {
+        List<Place> list = getHistory(c);
+        for (int i = list.size() - 1; i >= 0; i--) {
+            if (list.get(i).samePlace(p)) list.remove(i);
+        }
+        writeList(c, KEY_HISTORY, list, MAX_HISTORY);
+    }
+
+    private static List<Place> readList(Context c, String key) {
         List<Place> list = new ArrayList<>();
         try {
-            JSONArray arr = new JSONArray(sp(c).getString(KEY_SAVED, "[]"));
+            JSONArray arr = new JSONArray(sp(c).getString(key, "[]"));
             for (int i = 0; i < arr.length(); i++) list.add(Place.fromJson(arr.getJSONObject(i)));
         } catch (JSONException ignored) {
         }
         return list;
     }
 
-    public static void setSaved(Context c, List<Place> list) {
+    private static void writeList(Context c, String key, List<Place> list, int max) {
         JSONArray arr = new JSONArray();
         try {
-            for (int i = 0; i < list.size() && i < MAX_SAVED; i++) arr.put(list.get(i).toJson());
+            for (int i = 0; i < list.size() && i < max; i++) arr.put(list.get(i).toJson());
         } catch (JSONException ignored) {
         }
-        sp(c).edit().putString(KEY_SAVED, arr.toString()).apply();
+        sp(c).edit().putString(key, arr.toString()).apply();
     }
 
     public static boolean askedBattery(Context c) {

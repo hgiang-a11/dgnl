@@ -8,11 +8,18 @@ public final class Place {
     public final String name;
     public final double lat;
     public final double lng;
+    /** Địa chỉ ngắn hiển thị dưới tên; có thể null. */
+    public final String address;
 
     public Place(String name, double lat, double lng) {
+        this(name, lat, lng, null);
+    }
+
+    public Place(String name, double lat, double lng, String address) {
         this.name = name;
         this.lat = lat;
         this.lng = lng;
+        this.address = address;
     }
 
     /** Tên để hiển thị; nếu chưa có tên thì dùng toạ độ. */
@@ -22,7 +29,11 @@ public final class Place {
     }
 
     public Place withName(String newName) {
-        return new Place(newName, lat, lng);
+        return new Place(newName, lat, lng, address);
+    }
+
+    public boolean samePlace(Place o) {
+        return o != null && Math.abs(o.lat - lat) < 1e-6 && Math.abs(o.lng - lng) < 1e-6;
     }
 
     JSONObject toJson() throws JSONException {
@@ -30,11 +41,14 @@ public final class Place {
         o.put("name", name == null ? "" : name);
         o.put("lat", lat);
         o.put("lng", lng);
+        if (address != null) o.put("address", address);
         return o;
     }
 
     static Place fromJson(JSONObject o) {
         String n = o.optString("name", "");
-        return new Place(n.isEmpty() ? null : n, o.optDouble("lat"), o.optDouble("lng"));
+        String a = o.optString("address", "");
+        return new Place(n.isEmpty() ? null : n, o.optDouble("lat"), o.optDouble("lng"),
+                a.isEmpty() ? null : a);
     }
 }

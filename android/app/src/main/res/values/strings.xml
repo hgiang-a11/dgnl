@@ -2,15 +2,20 @@
 <resources>
     <string name="app_name">Sắp Tới Nơi</string>
 
-    <string name="search_hint">Tìm nơi đến…</string>
+    <string name="search_hint">Tìm kiếm ở đây</string>
     <string name="search">Tìm</string>
     <string name="searching">Đang tìm…</string>
     <string name="search_empty">Không tìm thấy. Thử gõ cụ thể hơn, hoặc chạm lên bản đồ.</string>
     <string name="network_error">Lỗi mạng, thử lại sau.</string>
-    <string name="pick_result">Chọn nơi đến</string>
 
-    <string name="no_dest">Chạm lên bản đồ hoặc tìm để chọn nơi đến.</string>
-    <string name="dest_label">Nơi đến: %1$s</string>
+    <string name="no_dest">Chạm lên bản đồ hoặc tìm kiếm ở trên.</string>
+    <string name="pick_dest_title">Chọn nơi đến</string>
+    <string name="recent">Gần đây</string>
+    <string name="results">Kết quả</string>
+    <string name="no_recent">Chưa có tìm kiếm nào gần đây</string>
+    <string name="clear">Xoá</string>
+    <string name="back">Quay lại</string>
+    <string name="attribution">© OpenStreetMap © CARTO</string>
     <string name="alert_when">Báo khi còn</string>
     <string name="distance">Khoảng cách</string>
     <string name="eta">Dự kiến tới trong</string>

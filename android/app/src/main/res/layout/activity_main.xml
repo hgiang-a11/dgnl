@@ -1,198 +1,363 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_alt"
-    android:orientation="vertical">
+    android:background="@color/bg_alt">
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <org.osmdroid.views.MapView
-            android:id="@+id/map"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <ImageButton
-            android:id="@+id/btnMyLocation"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="16dp"
-            android:background="@drawable/bg_fab"
-            android:contentDescription="@string/my_location"
-            android:elevation="6dp"
-            android:src="@drawable/ic_my_location" />
-    </FrameLayout>
-
+    <!-- Bản đồ và các nút nổi phía trên -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="-16dp"
-        android:background="@drawable/bg_panel"
-        android:elevation="12dp"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <org.osmdroid.views.MapView
+                android:id="@+id/map"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start"
+                android:layout_marginStart="8dp"
+                android:layout_marginBottom="24dp"
+                android:text="@string/attribution"
+                android:textColor="#99202124"
+                android:textSize="10sp" />
+
+            <ImageButton
+                android:id="@+id/btnMyLocation"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_gravity="bottom|end"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="32dp"
+                android:background="@drawable/bg_fab"
+                android:contentDescription="@string/my_location"
+                android:elevation="6dp"
+                android:src="@drawable/ic_my_location" />
+        </FrameLayout>
+
+        <!-- Phần hẹn báo ở dưới -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_marginTop="-20dp"
+            android:background="@drawable/bg_panel"
+            android:elevation="16dp"
+            android:orientation="vertical"
+            android:paddingStart="20dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="16dp">
+
+            <View
+                android:layout_width="36dp"
+                android:layout_height="4dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/bg_handle" />
+
+            <TextView
+                android:id="@+id/txtDestName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:text="@string/pick_dest_title"
+                android:textColor="@color/text"
+                android:textSize="22sp" />
+
+            <TextView
+                android:id="@+id/txtDestAddr"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/no_dest"
+                android:textColor="@color/text_light"
+                android:textSize="14sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/alert_when"
+                    android:textColor="@color/text_light"
+                    android:textSize="14sp" />
+
+                <SeekBar
+                    android:id="@+id/seekRadius"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="29" />
+
+                <TextView
+                    android:id="@+id/txtRadius"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:minWidth="64dp"
+                    android:textColor="@color/text"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_stat"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        style="@style/StatLabel"
+                        android:text="@string/distance" />
+
+                    <TextView
+                        android:id="@+id/txtDistance"
+                        style="@style/StatValue"
+                        android:text="@string/dash" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_stat"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        style="@style/StatLabel"
+                        android:text="@string/eta" />
+
+                    <TextView
+                        android:id="@+id/txtEta"
+                        style="@style/StatValue"
+                        android:text="@string/dash" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnStart"
+                    style="@style/Btn"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_btn_primary"
+                    android:enabled="false"
+                    android:text="@string/start"
+                    android:textColor="#FFFFFF" />
+
+                <Button
+                    android:id="@+id/btnSave"
+                    style="@style/Btn"
+                    android:layout_width="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_btn_secondary"
+                    android:enabled="false"
+                    android:text="@string/save"
+                    android:textColor="@color/text" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Ô tìm kiếm nổi trên bản đồ, giống Google Maps -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="10dp">
+
+        <LinearLayout
+            android:id="@+id/searchBar"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/bg_search_bar"
+            android:clickable="true"
+            android:elevation="4dp"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="18dp"
+            android:paddingEnd="6dp">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_search_pin" />
+
+            <TextView
+                android:id="@+id/txtSearchBar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:text="@string/search_hint"
+                android:textColor="@color/text_light"
+                android:textSize="18sp" />
+
+            <ImageButton
+                android:id="@+id/btnClearDest"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/clear"
+                android:src="@drawable/ic_close"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <HorizontalScrollView
+            android:id="@+id/mapChipsScroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingStart="16dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="6dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/mapChips"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+    </LinearLayout>
+
+    <!-- Trang tìm kiếm toàn màn hình -->
+    <LinearLayout
+        android:id="@+id/searchPage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/bg"
+        android:clickable="true"
+        android:elevation="20dp"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_margin="16dp"
+            android:background="@drawable/bg_search_field"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/back"
+                android:src="@drawable/ic_arrow_back" />
 
             <EditText
                 android:id="@+id/edtSearch"
                 android:layout_width="0dp"
-                android:layout_height="48dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:background="@drawable/bg_input"
+                android:background="@null"
                 android:hint="@string/search_hint"
                 android:imeOptions="actionSearch"
                 android:importantForAutofill="no"
                 android:inputType="text"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
                 android:singleLine="true"
-                android:textSize="16sp" />
+                android:textColor="@color/text"
+                android:textColorHint="@color/text_light"
+                android:textSize="18sp" />
 
-            <Button
-                android:id="@+id/btnSearch"
-                style="@style/Btn"
-                android:layout_width="wrap_content"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_btn_secondary"
-                android:text="@string/search"
-                android:textColor="@color/text" />
+            <ImageButton
+                android:id="@+id/btnClearText"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/clear"
+                android:src="@drawable/ic_close"
+                android:visibility="gone" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/txtDest"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:maxLines="2"
-            android:ellipsize="end"
-            android:text="@string/no_dest"
-            android:textColor="@color/text_light"
-            android:textSize="14sp" />
-
         <HorizontalScrollView
-            android:id="@+id/savedScroll"
+            android:id="@+id/searchChipsScroll"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:clipToPadding="false"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="12dp"
             android:scrollbars="none">
 
             <LinearLayout
-                android:id="@+id/savedList"
+                android:id="@+id/searchChips"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal" />
         </HorizontalScrollView>
 
-        <LinearLayout
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:background="@color/bg_alt" />
+
+        <TextView
+            android:id="@+id/txtListTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:paddingStart="20dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="4dp"
+            android:text="@string/recent"
+            android:textColor="@color/text"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/alert_when"
-                android:textColor="@color/text_light"
-                android:textSize="14sp" />
-
-            <SeekBar
-                android:id="@+id/seekRadius"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:max="29" />
-
-            <TextView
-                android:id="@+id/txtRadius"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="end"
-                android:minWidth="64dp"
-                android:textColor="@color/text"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <LinearLayout
+        <ListView
+            android:id="@+id/listResults"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_stat"
-                android:orientation="vertical"
-                android:padding="10dp">
-
-                <TextView
-                    style="@style/StatLabel"
-                    android:text="@string/distance" />
-
-                <TextView
-                    android:id="@+id/txtDistance"
-                    style="@style/StatValue"
-                    android:text="@string/dash" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_stat"
-                android:orientation="vertical"
-                android:padding="10dp">
-
-                <TextView
-                    style="@style/StatLabel"
-                    android:text="@string/eta" />
-
-                <TextView
-                    android:id="@+id/txtEta"
-                    style="@style/StatValue"
-                    android:text="@string/dash" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btnStart"
-                style="@style/Btn"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_btn_primary"
-                android:enabled="false"
-                android:text="@string/start"
-                android:textColor="#FFFFFF" />
-
-            <Button
-                android:id="@+id/btnSave"
-                style="@style/Btn"
-                android:layout_width="wrap_content"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_btn_secondary"
-                android:enabled="false"
-                android:text="@string/save"
-                android:textColor="@color/text" />
-        </LinearLayout>
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:divider="@null"
+            android:dividerHeight="0dp" />
     </LinearLayout>
-</LinearLayout>
+</FrameLayout>
