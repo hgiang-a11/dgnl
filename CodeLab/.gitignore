@@ -9,3 +9,7 @@ build/
 .externalNativeBuild
 .cxx
 local.properties
+
+# Bộ nhớ đệm của Python
+__pycache__/
+*.pyc
