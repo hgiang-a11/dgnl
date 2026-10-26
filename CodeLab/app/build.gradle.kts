@@ -14,8 +14,8 @@ android {
         applicationId = "com.codelab.app"
         minSdk = 24          // Chạy được từ Android 7.0 trở lên
         targetSdk = 34       // Nhắm tới Android 14 (phiên bản mới)
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         // Chaquopy cần chỉ định các loại chip (CPU) được hỗ trợ:
         // arm64-v8a (đa số điện thoại hiện nay), armeabi-v7a (máy cũ 32-bit), x86_64 (máy ảo)

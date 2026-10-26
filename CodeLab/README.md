@@ -21,16 +21,16 @@ hỗ trợ nhiều ngôn ngữ phổ biến. Dành cho việc học lập trình
 |----------|-----------|----------------|
 | Python | Chạy thật ngay trong app (thư viện Chaquopy) | **Không** — offline hoàn toàn |
 | JavaScript | Chạy thật ngay trong app (thư viện Rhino) | **Không** — offline hoàn toàn |
-| C++ | Gửi lên trình dịch online (Piston) | **Có** |
-| C | Gửi lên trình dịch online (Piston) | **Có** |
-| Java | Gửi lên trình dịch online (Piston) | **Có** |
+| C++ | Gửi lên trình dịch online (Wandbox) | **Có** |
+| C | Gửi lên trình dịch online (Wandbox) | **Có** |
+| Java | Gửi lên trình dịch online (Wandbox) | **Có** |
 
 > Với C++, C, Java: nếu **không có mạng**, app sẽ hiện thông báo *"Không có kết nối Internet"* và hướng dẫn bật mạng.
 > Python và JavaScript luôn chạy được kể cả khi tắt hoàn toàn Internet.
 
 Vì sao C++/Java phải chạy online? Để dịch (biên dịch) 2 ngôn ngữ này **hoàn toàn offline trên điện thoại**
 cần nhúng cả một bộ biên dịch rất lớn vào app — đây là một dự án riêng rất tốn công. Giải pháp hiện tại
-gửi code lên máy chủ dịch miễn phí **Piston** (emkc.org, không cần đăng ký khóa). Có thể bổ sung chạy
+gửi code lên máy chủ dịch miễn phí **Wandbox** (wandbox.org, không cần đăng ký khóa; trước đây dùng Piston nhưng dịch vụ này đã ngừng mở công khai từ 15/2/2026). Có thể bổ sung chạy
 offline cho các ngôn ngữ này về sau mà không phải sửa lại giao diện.
 
 ---

@@ -6,15 +6,17 @@ package com.codelab.app.model
  * - runsOffline = true: chạy thật ngay trên điện thoại, KHÔNG cần mạng (Python, JavaScript).
  * - runsOffline = false: cần gửi lên trình dịch online để dịch/chạy (C++, C, Java).
  *
- * pistonLang / pistonVersion: tên và phiên bản dùng khi gọi trình dịch online Piston.
+ * onlineLanguage: tên ngôn ngữ trên trình dịch online Wandbox (wandbox.org).
+ * preferredCompilers: trình dịch ưu tiên chọn trên Wandbox; nếu không có thì app
+ * tự chọn bản mới nhất của ngôn ngữ đó.
  */
 enum class Language(
     val id: String,
     val displayName: String,
     val extension: String,
     val runsOffline: Boolean,
-    val pistonLang: String,
-    val pistonVersion: String,
+    val onlineLanguage: String,
+    val preferredCompilers: List<String>,
     val template: String
 ) {
     PYTHON(
@@ -22,8 +24,8 @@ enum class Language(
         displayName = "Python",
         extension = "py",
         runsOffline = true,
-        pistonLang = "python",
-        pistonVersion = "3.10.0",
+        onlineLanguage = "Python",
+        preferredCompilers = emptyList(),
         template = """# Chương trình Python đầu tiên
 print("Xin chào từ Python!")
 
@@ -42,8 +44,8 @@ print("Tổng 1..5 =", tong)
         displayName = "JavaScript",
         extension = "js",
         runsOffline = true,
-        pistonLang = "javascript",
-        pistonVersion = "18.15.0",
+        onlineLanguage = "JavaScript",
+        preferredCompilers = emptyList(),
         template = """// Chương trình JavaScript đầu tiên
 console.log("Xin chào từ JavaScript!");
 
@@ -63,8 +65,8 @@ console.log("Tổng 1..5 = " + tong);
         displayName = "C++",
         extension = "cpp",
         runsOffline = false,
-        pistonLang = "c++",
-        pistonVersion = "10.2.0",
+        onlineLanguage = "C++",
+        preferredCompilers = listOf("gcc-head", "clang-head"),
         template = """// Chương trình C++ đầu tiên
 #include <iostream>
 using namespace std;
@@ -87,8 +89,8 @@ int main() {
         displayName = "C",
         extension = "c",
         runsOffline = false,
-        pistonLang = "c",
-        pistonVersion = "10.2.0",
+        onlineLanguage = "C",
+        preferredCompilers = listOf("gcc-head-c", "clang-head-c"),
         template = """// Chương trình C đầu tiên
 #include <stdio.h>
 
@@ -110,8 +112,9 @@ int main() {
         displayName = "Java",
         extension = "java",
         runsOffline = false,
-        pistonLang = "java",
-        pistonVersion = "15.0.2",
+        onlineLanguage = "Java",
+        // Wandbox không có bản "head" cho Java -> app tự chọn OpenJDK mới nhất
+        preferredCompilers = emptyList(),
         template = """// Chương trình Java đầu tiên
 public class Main {
     public static void main(String[] args) {

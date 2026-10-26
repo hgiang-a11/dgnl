@@ -7,7 +7,7 @@ import com.codelab.app.model.Language
  * Chọn đúng bộ chạy cho từng ngôn ngữ:
  * - Python  -> chạy offline (Chaquopy)
  * - JavaScript -> chạy offline (Rhino)
- * - C++, C, Java -> chạy online (Piston)
+ * - C++, C, Java -> chạy online (Wandbox)
  */
 object ExecutorFactory {
     fun create(context: Context, language: Language): CodeExecutor {

@@ -8,24 +8,22 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
  * Bộ chạy ONLINE — dùng cho C++, C, Java (những ngôn ngữ không dịch offline được).
  *
- * Code được gửi lên trình dịch miễn phí Piston (emkc.org) để dịch và chạy,
- * rồi lấy kết quả về. Nếu KHÔNG có mạng, app sẽ báo rõ "Không có kết nối Internet".
+ * Code được gửi lên trình dịch miễn phí Wandbox (wandbox.org, không cần đăng ký) để dịch
+ * và chạy, rồi lấy kết quả về. Nếu KHÔNG có mạng, app báo rõ "Không có kết nối Internet".
  */
 class OnlineExecutor(
     private val context: Context,
     private val language: Language
 ) : CodeExecutor {
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(40, TimeUnit.SECONDS)
-        .writeTimeout(20, TimeUnit.SECONDS)
-        .build()
+    /** Lỗi khi máy chủ trả về mã HTTP không thành công. */
+    private class HttpError(val code: Int, val body: String) : IOException("HTTP $code")
 
     override fun execute(code: String, mode: ExecMode): ExecResult {
         // Bước 1: kiểm tra mạng
@@ -41,86 +39,115 @@ class OnlineExecutor(
         }
 
         return try {
-            val responseText = sendRequest(code)
-            parseResponse(responseText, mode)
-        } catch (e: Exception) {
+            // Bước 2: chọn trình dịch phù hợp trên Wandbox
+            val compiler = findCompiler()
+                ?: return ExecResult(
+                    "⚠ Máy chủ dịch Wandbox hiện không có trình dịch ${language.displayName}.",
+                    isError = true
+                )
+
+            // Bước 3: gửi code lên để dịch và chạy
+            val body = JSONObject()
+                .put("compiler", compiler)
+                .put("code", WandboxApi.prepareCode(language, code))
+                .put("stdin", "")
+                .put("save", false)
+                .toString()
+            val response = JSONObject(post(WandboxApi.COMPILE_URL, body))
+
+            // Bước 4: đọc kết quả
+            WandboxApi.toResult(response, mode)
+        } catch (e: HttpError) {
+            if (e.code == 429 || e.code == 503) {
+                ExecResult(
+                    "⚠ Máy chủ dịch đang quá tải hoặc bạn bấm chạy quá nhiều lần liên tục.\n" +
+                        "Vui lòng đợi khoảng 1 phút rồi thử lại.",
+                    isError = true
+                )
+            } else {
+                // Có thể trình dịch đã nhớ không còn trên máy chủ -> lần sau chọn lại
+                forgetCompiler()
+                ExecResult(
+                    "⚠ Máy chủ dịch báo lỗi (mã ${e.code}). Vui lòng thử lại sau.\n" +
+                        e.body.take(300),
+                    isError = true
+                )
+            }
+        } catch (e: IOException) {
             ExecResult(
-                "⚠ Không kết nối được tới trình dịch online.\n" +
+                "⚠ Không kết nối được tới máy chủ dịch Wandbox.\n" +
+                    "Kiểm tra lại mạng rồi thử lại.\n" +
                     "Chi tiết: ${e.message}",
                 isError = true
             )
+        } catch (e: Exception) {
+            ExecResult("⚠ Lỗi khi dịch online: ${e.message}", isError = true)
         }
     }
 
-    /** Gửi code lên Piston và trả về chuỗi JSON kết quả. */
-    private fun sendRequest(code: String): String {
-        val fileName = when (language) {
-            Language.JAVA -> "Main.java"   // Java cần đúng tên lớp Main
-            else -> "main.${language.extension}"
+    // ---------- Chọn trình dịch (nhớ lại vài ngày để đỡ tải danh sách nhiều lần) ----------
+
+    private val prefs by lazy {
+        context.getSharedPreferences("wandbox", Context.MODE_PRIVATE)
+    }
+    private val prefKey get() = "compiler_${language.id}"
+
+    private fun findCompiler(): String? {
+        val saved = prefs.getString(prefKey, null)
+        val savedAt = prefs.getLong("${prefKey}_at", 0L)
+        if (saved != null && System.currentTimeMillis() - savedAt < CACHE_MILLIS) return saved
+
+        val list = try {
+            JSONArray(get(WandboxApi.LIST_URL))
+        } catch (e: Exception) {
+            // Không tải được danh sách: dùng tạm trình dịch đã nhớ hoặc tên mặc định
+            return saved ?: language.preferredCompilers.firstOrNull()
         }
 
-        val fileObj = JSONObject()
-            .put("name", fileName)
-            .put("content", code)
+        val picked = WandboxApi.pickCompiler(list, language) ?: return null
+        prefs.edit()
+            .putString(prefKey, picked)
+            .putLong("${prefKey}_at", System.currentTimeMillis())
+            .apply()
+        return picked
+    }
 
-        val body = JSONObject()
-            .put("language", language.pistonLang)
-            .put("version", language.pistonVersion)
-            .put("files", JSONArray().put(fileObj))
-            .put("stdin", "")
-            .toString()
+    private fun forgetCompiler() {
+        prefs.edit().remove(prefKey).remove("${prefKey}_at").apply()
+    }
 
-        val request = Request.Builder()
-            .url("https://emkc.org/api/v2/piston/execute")
-            .post(body.toRequestBody("application/json".toMediaType()))
-            .build()
+    // ---------- Gọi mạng ----------
 
+    private fun get(url: String): String =
+        call(Request.Builder().url(url).get().build())
+
+    private fun post(url: String, json: String): String =
+        call(Request.Builder().url(url).post(json.toRequestBody(JSON_TYPE)).build())
+
+    private fun call(request: Request): String {
         client.newCall(request).execute().use { response ->
             val text = response.body?.string().orEmpty()
-            if (!response.isSuccessful) {
-                throw RuntimeException("Máy chủ trả về mã ${response.code}. $text")
-            }
+            if (!response.isSuccessful) throw HttpError(response.code, text)
             return text
         }
     }
 
-    /** Đọc kết quả JSON và tách phần lỗi dịch / kết quả chạy. */
-    private fun parseResponse(json: String, mode: ExecMode): ExecResult {
-        val root = JSONObject(json)
+    companion object {
+        private const val CACHE_MILLIS = 3L * 24 * 60 * 60 * 1000   // 3 ngày
+        private val JSON_TYPE = "application/json".toMediaType()
 
-        // Giai đoạn dịch (một số ngôn ngữ như Python không có phần này)
-        val compile = root.optJSONObject("compile")
-        val compileErr = compile?.optString("stderr").orEmpty().trim()
-        val compileCode = compile?.optInt("code", 0) ?: 0
-
-        // Nếu chỉ Build để xem lỗi
-        if (mode == ExecMode.BUILD_ONLY) {
-            return if (compileErr.isNotEmpty() || compileCode != 0) {
-                ExecResult("Lỗi khi dịch:\n$compileErr", isError = true)
-            } else {
-                ExecResult("✓ Dịch thành công, không có lỗi.", isError = false)
+        // Dùng chung một kết nối cho cả app để nhanh hơn
+        private val client: OkHttpClient = OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)      // dịch Java có thể mất vài chục giây
+            .writeTimeout(20, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                chain.proceed(
+                    chain.request().newBuilder()
+                        .header("User-Agent", "CodeLab-Android/1.0")
+                        .build()
+                )
             }
-        }
-
-        // Nếu dịch lỗi thì dừng, hiện lỗi
-        if (compileErr.isNotEmpty() && compileCode != 0) {
-            return ExecResult("Lỗi khi dịch:\n$compileErr", isError = true)
-        }
-
-        // Giai đoạn chạy
-        val run = root.optJSONObject("run")
-        val stdout = run?.optString("stdout").orEmpty()
-        val stderr = run?.optString("stderr").orEmpty()
-        val runCode = run?.optInt("code", 0) ?: 0
-
-        val sb = StringBuilder()
-        if (stdout.isNotEmpty()) sb.append(stdout)
-        if (stderr.isNotEmpty()) {
-            if (sb.isNotEmpty()) sb.append('\n')
-            sb.append(stderr)
-        }
-        val text = sb.toString().ifEmpty { "(chương trình không in ra gì)" }
-
-        return ExecResult(text, isError = runCode != 0)
+            .build()
     }
 }
