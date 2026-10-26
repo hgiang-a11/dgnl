@@ -239,7 +239,9 @@ class EditorFragment : Fragment() {
             terminal = null
             hideInputRow()
 
-            val seconds = (SystemClock.elapsedRealtime() - startedAt) / 1000.0
+            // Thời gian chạy thật: không tính lúc chờ người dùng gõ
+            val runMillis = SystemClock.elapsedRealtime() - startedAt - (term?.waitedMillis ?: 0L)
+            val seconds = runMillis.coerceAtLeast(0L) / 1000.0
             val time = String.format(Locale("vi", "VN"), "%.2f giây", seconds)
             binding.output.text = result.output
             binding.output.setTextColor(if (result.isError) errorColor else normalColor)
@@ -327,10 +329,17 @@ class EditorFragment : Fragment() {
 
         override val isCancelled: Boolean get() = cancelled
 
+        /** Tổng thời gian chờ người dùng gõ (không tính vào thời gian chạy). */
+        @Volatile
+        var waitedMillis = 0L
+            private set
+
         override fun requestLine(outputSoFar: String): String? {
             if (cancelled) return null
+            val startedWaiting = SystemClock.elapsedRealtime()
             mainHandler.post { showWaitingForInput(this@TerminalInput, outputSoFar) }
             val entry = queue.take()
+            waitedMillis += SystemClock.elapsedRealtime() - startedWaiting
             return if (cancelled) null else entry.text
         }
 
