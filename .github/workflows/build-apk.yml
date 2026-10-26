@@ -1,6 +1,7 @@
 # Tự động build file APK của app CodeLab trên máy chủ GitHub.
 # Chạy mỗi khi có thay đổi trong thư mục CodeLab, hoặc bấm tay ở tab "Actions".
-# Quy trình: build -> cài thử và chạy kiểm thử trên máy ảo Android -> đăng APK lên Releases.
+# Quy trình: build -> cài thử, kiểm thử và chụp ảnh màn hình trên máy ảo Android
+#            -> đăng APK (kèm ảnh chụp) lên Releases.
 # APK chỉ được đăng khi cài thử và kiểm thử đều đạt.
 name: Build APK
 
@@ -87,7 +88,7 @@ jobs:
     name: Cài thử và kiểm thử trên máy ảo Android
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
     defaults:
       run:
         working-directory: CodeLab
@@ -122,24 +123,37 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      # 1) Chạy các bài kiểm thử (Python, JavaScript, mở app) trên máy ảo Android 14
-      # 2) Cài đúng file APK sẽ đăng lên Releases, mở app và kiểm tra app không bị sập
-      - name: Chạy trên máy ảo Android 14
+      # 1) Chạy toàn bộ kiểm thử (Python, JavaScript, Wandbox, giao diện, bàn phím) trên máy ảo
+      # 2) Chạy lại kiểm thử giao diện để lấy ảnh chụp màn hình (lần 1 app bị gỡ sau khi chạy xong)
+      # 3) Cài đúng file APK sẽ đăng lên Releases, mở app và kiểm tra app không bị sập
+      - name: Chạy trên máy ảo Android 14 (cỡ màn hình Pixel 6)
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
           arch: x86_64
           target: google_apis
+          profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           working-directory: CodeLab
           script: |
             ./gradlew connectedDebugAndroidTest --stacktrace
+            ./gradlew installDebug installDebugAndroidTest
+            adb shell am instrument -w -e class com.codelab.app.UiScreensTest com.codelab.app.test/androidx.test.runner.AndroidJUnitRunner
+            adb logcat -d -s UiScreensTest:I
+            adb pull /sdcard/Android/data/com.codelab.app/files/screens screens || true
             adb install -r dist/CodeLab.apk
             adb shell am start -W -n com.codelab.app/.MainActivity
             sleep 10
             adb logcat -d -b crash
             adb shell pidof com.codelab.app
+
+      - name: Lưu ảnh chụp màn hình
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: CodeLab/screens/*.png
+          if-no-files-found: warn
 
   release:
     name: Đăng APK lên Releases
@@ -153,26 +167,43 @@ jobs:
           name: CodeLab-APK
           path: dist
 
+      - name: Lấy ảnh chụp màn hình
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: screenshots
+          path: dist/screens
+
       - name: Viết nội dung trang tải
         run: |
-          cat > notes.md <<'EOF'
-          ## 📱 Tải app CodeLab cho Android
-
-          ### 👉 [BẤM VÀO ĐÂY ĐỂ TẢI CodeLab.apk](https://github.com/${{ github.repository }}/releases/download/apk-moi-nhat/CodeLab.apk)
-
-          Hoặc kéo xuống mục **Assets** ở cuối trang và bấm vào **CodeLab.apk**.
-
-          ### Cách cài đặt
-          1. Bấm link ở trên, chờ tải xong file **CodeLab.apk**.
-          2. Mở file vừa tải (bấm vào thông báo tải xuống, hoặc mở trong ứng dụng Tệp/File).
-          3. Nếu điện thoại hỏi, bấm **Cài đặt** → bật **Cho phép từ nguồn này**, rồi quay lại bấm **Cài đặt**.
-          4. Nếu Google Play Protect cảnh báo, chọn **Chi tiết khác** → **Vẫn cài đặt**.
-
-          > 💡 Nên mở trang này bằng trình duyệt **Chrome** (không mở bên trong ứng dụng GitHub hay ứng dụng chat) để tải file dễ hơn.
-
-          ---
-          Bản build tự động từ nhánh `${{ github.ref_name }}` (commit `${{ github.sha }}`), đã cài thử và kiểm thử trên máy ảo Android 14.
-          EOF
+          BASE="https://github.com/${{ github.repository }}/releases/download/apk-moi-nhat"
+          {
+            echo "## 📱 Tải app CodeLab cho Android"
+            echo
+            echo "### 👉 [BẤM VÀO ĐÂY ĐỂ TẢI CodeLab.apk]($BASE/CodeLab.apk)"
+            echo
+            echo "Hoặc kéo xuống mục **Assets** ở cuối trang và bấm vào **CodeLab.apk**."
+            echo
+            echo "### Cách cài đặt"
+            echo "1. Bấm link ở trên, chờ tải xong file **CodeLab.apk**."
+            echo "2. Mở file vừa tải (bấm vào thông báo tải xuống, hoặc mở trong ứng dụng Tệp/File)."
+            echo "3. Nếu điện thoại hỏi, bấm **Cài đặt** → bật **Cho phép từ nguồn này**, rồi quay lại bấm **Cài đặt**."
+            echo "4. Nếu Google Play Protect cảnh báo, chọn **Chi tiết khác** → **Vẫn cài đặt**."
+            echo
+            echo "> 💡 Nên mở trang này bằng trình duyệt **Chrome** (không mở bên trong ứng dụng GitHub hay ứng dụng chat) để tải file dễ hơn."
+            if ls dist/screens/*.png >/dev/null 2>&1; then
+              echo
+              echo "### 📸 Ảnh chụp màn hình"
+              echo
+              for f in dist/screens/*.png; do
+                echo "<img src=\"$BASE/$(basename "$f")\" width=\"200\">"
+              done
+            fi
+            echo
+            echo "---"
+            echo "Bản build tự động từ nhánh \`${{ github.ref_name }}\` (commit \`${{ github.sha }}\`), đã cài thử và kiểm thử trên máy ảo Android 14."
+          } > notes.md
+          cat notes.md
 
       - name: Đăng APK lên trang Releases
         env:
@@ -180,8 +211,10 @@ jobs:
         run: |
           # Xóa bản cũ (nếu có) rồi đăng bản mới, để link tải luôn trỏ tới bản mới nhất.
           # Đánh dấu "Latest" để hiện ngay ở mục Releases trên trang chính của kho mã.
+          files=(dist/CodeLab.apk)
+          for f in dist/screens/*.png; do [ -e "$f" ] && files+=("$f"); done
           gh release delete apk-moi-nhat --repo "${{ github.repository }}" --yes --cleanup-tag || true
-          gh release create apk-moi-nhat dist/CodeLab.apk \
+          gh release create apk-moi-nhat "${files[@]}" \
             --repo "${{ github.repository }}" \
             --target "${{ github.sha }}" \
             --latest \

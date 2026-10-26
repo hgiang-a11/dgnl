@@ -1,33 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Màn hình soạn thảo. Bố cục CỐ ĐỊNH: khi mở bàn phím, bàn phím đè lên khung kết quả
+  thay vì đẩy cả màn hình lên (xem EditorFragment.applyInsets).
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/editor_bg">
+    android:background="@color/editor_bg"
+    android:orientation="vertical">
 
-    <!-- ===== Thanh trên cùng: nút quay lại + tên project ===== -->
+    <!-- ===== Thanh trên cùng: quay lại + huy hiệu ngôn ngữ + tên dự án ===== -->
     <LinearLayout
+        android:id="@+id/top_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
         android:background="@color/editor_topbar"
-        android:paddingLeft="4dp" android:paddingRight="4dp"
-        android:paddingTop="6dp" android:paddingBottom="6dp">
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="4dp"
+        android:paddingTop="8dp"
+        android:paddingRight="14dp"
+        android:paddingBottom="8dp">
 
         <ImageButton
             android:id="@+id/btn_back"
             android:layout_width="44dp"
             android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Quay lại"
             android:src="@drawable/ic_back"
-            app:tint="@color/white"
-            android:contentDescription="Quay lại" />
+            app:tint="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/lang_badge"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/bg_badge"
+            android:gravity="center"
+            android:maxLines="1"
+            android:text="Py"
+            android:textStyle="bold"
+            app:autoSizeMaxTextSize="13sp"
+            app:autoSizeMinTextSize="7sp"
+            app:autoSizeTextType="uniform" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -35,10 +57,10 @@
                 android:id="@+id/text_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:maxLines="1"
                 android:ellipsize="end"
-                android:text="Project"
-                android:textColor="@color/white"
+                android:maxLines="1"
+                android:text="Dự án"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -46,20 +68,25 @@
                 android:id="@+id/text_subtitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:maxLines="1"
                 android:ellipsize="end"
+                android:maxLines="1"
                 android:text="Ngôn ngữ"
-                android:textColor="#9E9E9E"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>
 
         <ProgressBar
             android:id="@+id/progress"
-            android:layout_width="26dp"
-            android:layout_height="26dp"
-            android:layout_marginEnd="12dp"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:indeterminateTint="@color/primary"
             android:visibility="gone" />
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider" />
 
     <!-- ===== Phần trên: khung CODE ===== -->
     <com.codelab.app.editor.CodeEditText
@@ -68,133 +95,204 @@
         android:layout_height="0dp"
         android:layout_weight="3"
         android:gravity="top|start"
-        android:scrollbars="vertical"
         android:importantForAutofill="no"
-        android:textColor="@color/editor_text" />
+        android:scrollbars="vertical" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider" />
 
     <!-- ===== Thanh nút ở giữa ===== -->
     <LinearLayout
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:background="@color/editor_toolbar"
-        android:weightSum="6"
-        android:paddingTop="4dp" android:paddingBottom="4dp">
+        android:orientation="horizontal"
+        android:paddingLeft="4dp"
+        android:paddingTop="4dp"
+        android:paddingRight="4dp"
+        android:paddingBottom="4dp">
 
         <!-- Nút Chạy -->
         <LinearLayout android:id="@+id/btn_run"
             android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:orientation="vertical"
-            android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp"
+            android:layout_weight="1" android:layout_margin="2dp"
+            android:background="@drawable/bg_tool_button"
             android:clickable="true" android:focusable="true"
-            android:background="?attr/selectableItemBackground">
+            android:gravity="center" android:orientation="vertical"
+            android:paddingTop="6dp" android:paddingBottom="6dp">
             <ImageView android:layout_width="24dp" android:layout_height="24dp"
-                android:src="@drawable/ic_run" app:tint="#4CAF50"
-                android:contentDescription="Chạy" />
+                android:contentDescription="Chạy" android:src="@drawable/ic_run"
+                app:tint="@color/success" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Chạy" android:textColor="@color/white" android:textSize="10sp" />
+                android:layout_marginTop="2dp" android:maxLines="1" android:text="Chạy"
+                android:textColor="@color/text_primary" android:textSize="10sp" />
         </LinearLayout>
 
         <!-- Nút Build + Chạy -->
         <LinearLayout android:id="@+id/btn_build_run"
             android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:orientation="vertical"
-            android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp"
+            android:layout_weight="1" android:layout_margin="2dp"
+            android:background="@drawable/bg_tool_button"
             android:clickable="true" android:focusable="true"
-            android:background="?attr/selectableItemBackground">
+            android:gravity="center" android:orientation="vertical"
+            android:paddingTop="6dp" android:paddingBottom="6dp">
             <ImageView android:layout_width="24dp" android:layout_height="24dp"
-                android:src="@drawable/ic_build_run" app:tint="#64B5F6"
-                android:contentDescription="Build và chạy" />
+                android:contentDescription="Build và chạy" android:src="@drawable/ic_build_run"
+                app:tint="@color/primary" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Build+Chạy" android:textColor="@color/white" android:textSize="10sp" />
+                android:layout_marginTop="2dp" android:maxLines="1" android:text="Build+Chạy"
+                android:textColor="@color/text_primary" android:textSize="10sp" />
         </LinearLayout>
 
         <!-- Nút Build (xem lỗi) -->
         <LinearLayout android:id="@+id/btn_build"
             android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:orientation="vertical"
-            android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp"
+            android:layout_weight="1" android:layout_margin="2dp"
+            android:background="@drawable/bg_tool_button"
             android:clickable="true" android:focusable="true"
-            android:background="?attr/selectableItemBackground">
+            android:gravity="center" android:orientation="vertical"
+            android:paddingTop="6dp" android:paddingBottom="6dp">
             <ImageView android:layout_width="24dp" android:layout_height="24dp"
-                android:src="@drawable/ic_build" app:tint="#FFB74D"
-                android:contentDescription="Build xem lỗi" />
+                android:contentDescription="Build xem lỗi" android:src="@drawable/ic_build"
+                app:tint="@color/warning" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Build" android:textColor="@color/white" android:textSize="10sp" />
+                android:layout_marginTop="2dp" android:maxLines="1" android:text="Build"
+                android:textColor="@color/text_primary" android:textSize="10sp" />
         </LinearLayout>
 
         <!-- Nút Hoàn tác -->
         <LinearLayout android:id="@+id/btn_undo"
             android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:orientation="vertical"
-            android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp"
+            android:layout_weight="1" android:layout_margin="2dp"
+            android:background="@drawable/bg_tool_button"
             android:clickable="true" android:focusable="true"
-            android:background="?attr/selectableItemBackground">
+            android:gravity="center" android:orientation="vertical"
+            android:paddingTop="6dp" android:paddingBottom="6dp">
             <ImageView android:layout_width="24dp" android:layout_height="24dp"
-                android:src="@drawable/ic_undo" app:tint="@color/white"
-                android:contentDescription="Hoàn tác" />
+                android:contentDescription="Hoàn tác" android:src="@drawable/ic_undo"
+                app:tint="@color/text_secondary" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Hoàn tác" android:textColor="@color/white" android:textSize="10sp" />
+                android:layout_marginTop="2dp" android:maxLines="1" android:text="Hoàn tác"
+                android:textColor="@color/text_primary" android:textSize="10sp" />
         </LinearLayout>
 
         <!-- Nút Làm lại -->
         <LinearLayout android:id="@+id/btn_redo"
             android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:orientation="vertical"
-            android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp"
+            android:layout_weight="1" android:layout_margin="2dp"
+            android:background="@drawable/bg_tool_button"
             android:clickable="true" android:focusable="true"
-            android:background="?attr/selectableItemBackground">
+            android:gravity="center" android:orientation="vertical"
+            android:paddingTop="6dp" android:paddingBottom="6dp">
             <ImageView android:layout_width="24dp" android:layout_height="24dp"
-                android:src="@drawable/ic_redo" app:tint="@color/white"
-                android:contentDescription="Làm lại" />
+                android:contentDescription="Làm lại" android:src="@drawable/ic_redo"
+                app:tint="@color/text_secondary" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Làm lại" android:textColor="@color/white" android:textSize="10sp" />
+                android:layout_marginTop="2dp" android:maxLines="1" android:text="Làm lại"
+                android:textColor="@color/text_primary" android:textSize="10sp" />
         </LinearLayout>
 
         <!-- Nút Lưu -->
         <LinearLayout android:id="@+id/btn_save"
             android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:orientation="vertical"
-            android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp"
+            android:layout_weight="1" android:layout_margin="2dp"
+            android:background="@drawable/bg_tool_button"
             android:clickable="true" android:focusable="true"
-            android:background="?attr/selectableItemBackground">
+            android:gravity="center" android:orientation="vertical"
+            android:paddingTop="6dp" android:paddingBottom="6dp">
             <ImageView android:layout_width="24dp" android:layout_height="24dp"
-                android:src="@drawable/ic_save" app:tint="#4DD0E1"
-                android:contentDescription="Lưu" />
+                android:contentDescription="Lưu" android:src="@drawable/ic_save"
+                app:tint="@color/primary" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Lưu" android:textColor="@color/white" android:textSize="10sp" />
+                android:layout_marginTop="2dp" android:maxLines="1" android:text="Lưu"
+                android:textColor="@color/text_primary" android:textSize="10sp" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Nhãn KẾT QUẢ -->
-    <TextView
+    <View
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/editor_output_bg"
-        android:paddingLeft="14dp" android:paddingRight="14dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="4dp"
-        android:text="KẾT QUẢ"
-        android:textColor="#808080"
-        android:textSize="11sp"
-        android:textStyle="bold" />
+        android:layout_height="1dp"
+        android:background="@color/divider" />
 
-    <!-- ===== Phần dưới: khung KẾT QUẢ ===== -->
-    <ScrollView
+    <!-- ===== Phần dưới: khung KẾT QUẢ (bàn phím sẽ đè lên phần này) ===== -->
+    <LinearLayout
+        android:id="@+id/output_panel"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="2"
         android:background="@color/editor_output_bg"
-        android:padding="14dp">
+        android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/output"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:textIsSelectable="true"
-            android:textColor="@color/editor_text"
-            android:textSize="14sp" />
-    </ScrollView>
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingLeft="14dp"
+            android:paddingTop="6dp"
+            android:paddingRight="6dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.08"
+                android:text="KẾT QUẢ"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text_status"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/btn_clear"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_tool_button"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingLeft="10dp"
+                android:paddingTop="6dp"
+                android:paddingRight="10dp"
+                android:paddingBottom="6dp"
+                android:text="Xóa"
+                android:textColor="@color/primary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <ScrollView
+            android:id="@+id/output_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingLeft="14dp"
+            android:paddingTop="4dp"
+            android:paddingRight="14dp"
+            android:paddingBottom="14dp">
+
+            <TextView
+                android:id="@+id/output"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:lineSpacingExtra="2dp"
+                android:textColor="@color/editor_text"
+                android:textIsSelectable="true"
+                android:textSize="13sp" />
+        </ScrollView>
+    </LinearLayout>
 
 </LinearLayout>

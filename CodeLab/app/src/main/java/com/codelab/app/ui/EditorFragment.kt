@@ -1,13 +1,18 @@
 package com.codelab.app.ui
 
-import android.graphics.Color
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.codelab.app.R
 import com.codelab.app.data.ProjectRepository
 import com.codelab.app.databinding.FragmentEditorBinding
 import com.codelab.app.exec.ExecMode
@@ -17,15 +22,18 @@ import com.codelab.app.model.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 /**
  * Màn hình soạn thảo một project.
  *
  * Bố cục từ trên xuống:
- *  - Thanh trên cùng: nút quay lại + tên project.
+ *  - Thanh trên cùng: nút quay lại + huy hiệu ngôn ngữ + tên project.
  *  - Khung CODE (phần trên, có thể gõ và sửa).
  *  - Thanh nút ở giữa: Chạy, Build+Chạy, Build (xem lỗi), Hoàn tác, Làm lại, Lưu.
  *  - Khung KẾT QUẢ (phần dưới, hiển thị kết quả hoặc lỗi).
+ *
+ * Bố cục luôn CỐ ĐỊNH: khi mở bàn phím, bàn phím đè lên khung kết quả chứ không đẩy màn hình lên.
  */
 class EditorFragment : Fragment() {
 
@@ -36,8 +44,8 @@ class EditorFragment : Fragment() {
     private lateinit var project: Project
     private lateinit var language: Language
 
-    private val normalColor = Color.parseColor("#D4D4D4")
-    private val errorColor = Color.parseColor("#F48771")
+    private val normalColor by lazy { ContextCompat.getColor(requireContext(), R.color.editor_text) }
+    private val errorColor by lazy { ContextCompat.getColor(requireContext(), R.color.danger) }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -60,6 +68,7 @@ class EditorFragment : Fragment() {
         language = project.language
 
         // Tiêu đề
+        binding.langBadge.styleAsBadge(language)
         binding.textTitle.text = project.name
         binding.textSubtitle.text = if (language.runsOffline) {
             "${language.displayName} · chạy offline"
@@ -84,9 +93,48 @@ class EditorFragment : Fragment() {
             saveCode()
             Toast.makeText(requireContext(), "Đã lưu", Toast.LENGTH_SHORT).show()
         }
+        binding.btnClear.setOnClickListener { showPlaceholder() }
 
-        binding.output.setTextColor(normalColor)
-        binding.output.text = "Bấm ▶ để chạy code. Kết quả sẽ hiện ở đây."
+        showPlaceholder()
+        applyInsets()
+    }
+
+    /**
+     * App vẽ tràn cả màn hình, nên tự xử lý phần bị che:
+     *  - Thanh trạng thái (trên cùng) và thanh điều hướng (dưới cùng): chừa khoảng trống.
+     *  - Bàn phím: KHÔNG thu nhỏ màn hình. Bàn phím đè lên khung kết quả; chỉ riêng ô code
+     *    được chừa thêm khoảng trống phía dưới nếu bàn phím che mất một phần, để dòng đang gõ
+     *    vẫn nhìn thấy được.
+     */
+    private fun applyInsets() {
+        val topBarTop = binding.topBar.paddingTop
+        val outputBottom = binding.outputScroll.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            binding.topBar.updatePadding(top = topBarTop + bars.top)
+            binding.outputScroll.updatePadding(bottom = outputBottom + bars.bottom)
+            updateKeyboardOverlap(ime.bottom)
+            insets
+        }
+        binding.root.requestInsetsWhenAttached()
+    }
+
+    /** Tính phần ô code bị bàn phím che và báo cho ô code chừa chỗ. */
+    private fun updateKeyboardOverlap(imeHeight: Int) {
+        val editor = binding.editor
+        editor.post {
+            if (_binding == null) return@post
+            if (imeHeight <= 0) {
+                editor.setKeyboardOverlap(0)
+                return@post
+            }
+            val location = IntArray(2)
+            editor.getLocationInWindow(location)
+            val editorBottom = location[1] + editor.height
+            val keyboardTop = editor.rootView.height - imeHeight
+            editor.setKeyboardOverlap(editorBottom - keyboardTop)
+        }
     }
 
     private fun updateUndoRedoButtons() {
@@ -94,6 +142,17 @@ class EditorFragment : Fragment() {
         binding.btnRedo.isEnabled = binding.editor.canRedo()
         binding.btnUndo.alpha = if (binding.editor.canUndo()) 1f else 0.4f
         binding.btnRedo.alpha = if (binding.editor.canRedo()) 1f else 0.4f
+    }
+
+    private fun showPlaceholder() {
+        binding.output.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_hint))
+        binding.output.text = "Bấm ▶ Chạy để chạy code. Kết quả sẽ hiện ở đây."
+        setStatus("", R.color.text_secondary)
+    }
+
+    private fun setStatus(text: String, colorRes: Int) {
+        binding.textStatus.text = text
+        binding.textStatus.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
     }
 
     /** Lưu code hiện tại vào bộ nhớ máy. */
@@ -110,21 +169,29 @@ class EditorFragment : Fragment() {
 
         setRunning(true)
         binding.output.setTextColor(normalColor)
-        binding.output.text = when (mode) {
-            ExecMode.BUILD_ONLY -> "Đang kiểm tra lỗi..."
-            else -> "Đang chạy..."
-        }
+        binding.output.text = if (mode == ExecMode.BUILD_ONLY) "Đang kiểm tra lỗi..." else "Đang chạy..."
+        setStatus(if (language.runsOffline) "Đang chạy trên máy…" else "Đang gửi lên máy chủ dịch…", R.color.text_secondary)
 
         // Lấy context trước khi sang luồng nền (tránh lỗi nếu màn hình bị đóng giữa chừng)
         val appContext = requireContext().applicationContext
+        val startedAt = SystemClock.elapsedRealtime()
         viewLifecycleOwner.lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
                 ExecutorFactory.create(appContext, language).execute(code, mode)
             }
             // Có thể màn hình đã bị đóng trong lúc chờ
             if (_binding == null) return@launch
+            val seconds = (SystemClock.elapsedRealtime() - startedAt) / 1000.0
+            val time = String.format(Locale("vi", "VN"), "%.2f giây", seconds)
+
             binding.output.text = result.output
             binding.output.setTextColor(if (result.isError) errorColor else normalColor)
+            binding.outputScroll.scrollTo(0, 0)
+            when {
+                result.requiresInternet -> setStatus("● Không có mạng", R.color.warning)
+                result.isError -> setStatus("✕ Có lỗi · $time", R.color.danger)
+                else -> setStatus("✓ Hoàn thành · $time", R.color.success)
+            }
             setRunning(false)
         }
     }
@@ -132,9 +199,10 @@ class EditorFragment : Fragment() {
     /** Bật/tắt trạng thái đang chạy (hiện vòng xoay, khóa nút). */
     private fun setRunning(running: Boolean) {
         binding.progress.visibility = if (running) View.VISIBLE else View.GONE
-        binding.btnRun.isEnabled = !running
-        binding.btnBuildRun.isEnabled = !running
-        binding.btnBuild.isEnabled = !running
+        listOf(binding.btnRun, binding.btnBuildRun, binding.btnBuild).forEach {
+            it.isEnabled = !running
+            it.alpha = if (running) 0.5f else 1f
+        }
     }
 
     override fun onPause() {

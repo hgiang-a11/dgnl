@@ -1,6 +1,6 @@
 package com.codelab.app.ui
 
-import android.graphics.Color
+import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -9,7 +9,7 @@ import com.codelab.app.model.Project
 
 /**
  * Bộ "adapter" nối dữ liệu danh sách project với lưới hiển thị trên màn hình chính.
- * Mỗi project hiển thị trong một ô vuông (card).
+ * Mỗi project hiển thị trong một ô (thẻ) có huy hiệu ngôn ngữ, tên, mô tả và thời gian sửa.
  */
 class ProjectAdapter(
     private var items: List<Project>,
@@ -32,16 +32,20 @@ class ProjectAdapter(
         val project = items[position]
         val lang = project.language
         with(holder.binding) {
+            projectBadge.styleAsBadge(lang)
+            projectMode.styleAsModePill(lang)
             projectName.text = project.name
             projectLanguage.text = lang.displayName
-            projectDescription.text =
-                project.description.ifBlank { "(không có mô tả)" }
-            // Nhãn nhỏ cho biết chạy offline hay cần mạng
-            projectMode.text = if (lang.runsOffline) "● Offline" else "● Cần mạng"
-            projectMode.setTextColor(
-                if (lang.runsOffline) Color.parseColor("#4CAF50")
-                else Color.parseColor("#FF9800")
-            )
+            projectDescription.text = project.description.ifBlank { "Không có mô tả" }
+            // Vd: "Sửa 5 phút trước" (tự theo ngôn ngữ của điện thoại)
+            val now = System.currentTimeMillis()
+            projectTime.text = if (now - project.updatedAt < DateUtils.MINUTE_IN_MILLIS) {
+                "Sửa vừa xong"
+            } else {
+                "Sửa " + DateUtils.getRelativeTimeSpanString(
+                    project.updatedAt, now, DateUtils.MINUTE_IN_MILLIS
+                ).toString().lowercase()
+            }
             root.setOnClickListener { onClick(project) }
             root.setOnLongClickListener { onLongClick(project); true }
         }

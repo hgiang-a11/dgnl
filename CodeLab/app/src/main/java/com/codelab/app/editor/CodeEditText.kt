@@ -10,6 +10,8 @@ import android.text.InputType
 import android.text.TextWatcher
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatEditText
+import androidx.core.content.ContextCompat
+import com.codelab.app.R
 import com.codelab.app.model.Language
 
 /**
@@ -25,17 +27,22 @@ class CodeEditText @JvmOverloads constructor(
 
     // --- Phần vẽ số dòng ---
     private val lineNumberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#858585")
-        textSize = 32f
+        color = ContextCompat.getColor(context, R.color.editor_line_number)
         typeface = Typeface.MONOSPACE
         textAlign = Paint.Align.RIGHT
     }
     private val gutterBgPaint = Paint().apply {
-        color = Color.parseColor("#252526")
+        color = ContextCompat.getColor(context, R.color.editor_bg)
+    }
+    private val separatorPaint = Paint().apply {
+        color = ContextCompat.getColor(context, R.color.divider)
     }
     private var gutterWidth = 0
     private var gutterTextX = 0f
     private val gutterPadH = dp(10)
+
+    // --- Phần chừa chỗ cho bàn phím ---
+    private val basePaddingBottom = dp(8)
 
     // --- Phần tô màu ---
     private var highlighter: SyntaxHighlighter? = null
@@ -52,10 +59,13 @@ class CodeEditText @JvmOverloads constructor(
     var onHistoryChanged: (() -> Unit)? = null
 
     init {
-        setBackgroundColor(Color.parseColor("#1E1E1E"))
-        setTextColor(Color.parseColor("#D4D4D4"))
+        setBackgroundColor(ContextCompat.getColor(context, R.color.editor_bg))
+        setTextColor(ContextCompat.getColor(context, R.color.editor_text))
         typeface = Typeface.MONOSPACE
         textSize = 15f
+        // Số dòng nhỏ hơn chữ code một chút (textSize ở đây đã đổi ra điểm ảnh)
+        lineNumberPaint.textSize = textSize * 0.85f
+        setLineSpacing(0f, 1.1f)
         gravity = android.view.Gravity.TOP or android.view.Gravity.START
         // Nhiều dòng, không gợi ý từ, không tự sửa chính tả (quan trọng khi gõ code)
         inputType = InputType.TYPE_CLASS_TEXT or
@@ -63,7 +73,7 @@ class CodeEditText @JvmOverloads constructor(
             InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS or
             InputType.TYPE_TEXT_FLAG_IME_MULTI_LINE
         isHorizontalScrollBarEnabled = false
-        setPadding(dp(48), dp(8), dp(12), dp(8))
+        setPadding(dp(48), dp(8), dp(12), basePaddingBottom)
 
         addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
@@ -115,6 +125,20 @@ class CodeEditText @JvmOverloads constructor(
         onHistoryChanged?.invoke()
     }
 
+    /**
+     * Khi bàn phím đè lên phần dưới của ô code, chừa thêm khoảng trống phía dưới đúng bằng
+     * phần bị che, để dòng đang gõ luôn nằm trên bàn phím (ô code không đổi kích thước).
+     */
+    fun setKeyboardOverlap(overlapPx: Int) {
+        val bottom = basePaddingBottom + overlapPx.coerceAtLeast(0)
+        if (bottom != paddingBottom) {
+            setPadding(paddingLeft, paddingTop, paddingRight, bottom)
+        }
+        if (overlapPx > 0 && hasFocus()) {
+            post { bringPointIntoView(selectionStart.coerceAtLeast(0)) }
+        }
+    }
+
     fun canUndo() = undoStack.isNotEmpty()
     fun canRedo() = redoStack.isNotEmpty()
 
@@ -164,8 +188,9 @@ class CodeEditText @JvmOverloads constructor(
         if (lay != null && gutterWidth > 0) {
             val sx = scrollX.toFloat()
             val sy = scrollY.toFloat()
-            // Nền lề số dòng, luôn nằm cố định bên trái dù cuộn
+            // Nền lề số dòng + đường kẻ phân cách, luôn nằm cố định bên trái dù cuộn
             canvas.drawRect(sx, sy, sx + gutterWidth, sy + height, gutterBgPaint)
+            canvas.drawRect(sx + gutterWidth - 1f, sy, sx + gutterWidth, sy + height, separatorPaint)
             val txt = text
             var logical = 0
             for (v in 0 until lay.lineCount) {
