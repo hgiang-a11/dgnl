@@ -120,21 +120,33 @@ class EditorFragment : Fragment() {
         binding.root.requestInsetsWhenAttached()
     }
 
-    /** Tính phần ô code bị bàn phím che và báo cho ô code chừa chỗ. */
+    /**
+     * Tính phần ô code bị bàn phím che và báo cho ô code chừa chỗ.
+     * Thanh nút nếu chỉ bị che một nửa thì ẩn tạm (tránh lộ nửa biểu tượng), đóng bàn phím lại hiện.
+     */
     private fun updateKeyboardOverlap(imeHeight: Int) {
         val editor = binding.editor
         editor.post {
             if (_binding == null) return@post
+            val toolbar = binding.toolbar
             if (imeHeight <= 0) {
                 editor.setKeyboardOverlap(0)
+                toolbar.visibility = View.VISIBLE
                 return@post
             }
-            val location = IntArray(2)
-            editor.getLocationInWindow(location)
-            val editorBottom = location[1] + editor.height
             val keyboardTop = editor.rootView.height - imeHeight
-            editor.setKeyboardOverlap(editorBottom - keyboardTop)
+            editor.setKeyboardOverlap(bottomInWindow(editor) - keyboardTop)
+
+            val toolbarTop = bottomInWindow(toolbar) - toolbar.height
+            val partlyCovered = toolbarTop < keyboardTop && bottomInWindow(toolbar) > keyboardTop
+            toolbar.visibility = if (partlyCovered) View.INVISIBLE else View.VISIBLE
         }
+    }
+
+    private fun bottomInWindow(view: View): Int {
+        val location = IntArray(2)
+        view.getLocationInWindow(location)
+        return location[1] + view.height
     }
 
     private fun updateUndoRedoButtons() {

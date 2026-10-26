@@ -46,8 +46,12 @@ class NewProjectDialog : DialogFragment() {
         val dialog = MaterialAlertDialogBuilder(requireContext())
             .setView(binding.root)
             .create()
-        // Khi bàn phím hiện, hộp thoại tự dịch lên để không bị che ô nhập
-        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        dialog.window?.apply {
+            // Khi bàn phím hiện, hộp thoại tự dịch lên để không bị che ô nhập
+            setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            // Làm tối nền phía sau để hộp thoại nổi bật
+            setDimAmount(0.65f)
+        }
         return dialog
     }
 

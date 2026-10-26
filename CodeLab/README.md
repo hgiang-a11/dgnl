@@ -7,12 +7,15 @@ hỗ trợ nhiều ngôn ngữ phổ biến. Dành cho việc học lập trình
 
 ## 1. Tính năng chính
 
-- **Màn hình chính**: hiển thị các project dưới dạng lưới ô vuông (2 ô mỗi hàng), có nút dấu cộng (+) để tạo project mới.
-- **Tạo project**: chọn ngôn ngữ, đặt tên và mô tả.
+- **Giao diện tối** toàn app, phong cách giống các app lập trình hiện đại.
+- **Màn hình chính**: các dự án hiển thị dạng lưới thẻ (2 ô mỗi hàng) với huy hiệu màu theo ngôn ngữ,
+  nhãn Offline/Cần mạng, thời gian sửa gần nhất; nút **Dự án mới** để tạo dự án.
+- **Tạo dự án**: hộp thoại nổi giữa màn hình — chọn ngôn ngữ, đặt tên và mô tả.
 - **Màn hình soạn thảo** (chia trên – dưới):
   - Phần **trên**: ô viết code, có **số dòng** và **tô màu cú pháp** (từ khóa, chuỗi, số, chú thích).
   - Thanh nút ở **giữa**: `Chạy` ▶, `Build + Chạy`, `Build` (chỉ kiểm tra lỗi, không chạy), `Hoàn tác`, `Làm lại`, `Lưu`.
-  - Phần **dưới**: khung hiển thị kết quả hoặc báo lỗi.
+  - Phần **dưới**: khung kết quả, kèm trạng thái (hoàn thành / lỗi / không có mạng) và thời gian chạy.
+  - Bố cục **cố định**: mở bàn phím thì bàn phím đè lên khung kết quả, không đẩy màn hình lên.
 - **Tự động lưu** code khi rời màn hình; dữ liệu lưu trong máy nên **không mất khi tắt app**.
 
 ## 2. Ngôn ngữ và cách chạy
