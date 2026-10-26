@@ -1,0 +1,17 @@
+<resources>
+    <color name="primary">#2962FF</color>
+    <color name="primary_dark">#0039CB</color>
+    <color name="accent">#00C853</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+
+    <!-- Màu của màn hình soạn thảo (nền tối giống trình lập trình) -->
+    <color name="editor_bg">#1E1E1E</color>
+    <color name="editor_toolbar">#2D2D30</color>
+    <color name="editor_output_bg">#171717</color>
+    <color name="editor_text">#D4D4D4</color>
+    <color name="editor_topbar">#252526</color>
+
+    <!-- Màu nền màn hình chính -->
+    <color name="home_bg">#F5F6FA</color>
+</resources>

@@ -1,0 +1,101 @@
+# CodeLab — App học và chạy code trên điện thoại
+
+Ứng dụng Android (viết bằng Kotlin) cho phép **viết code và chạy code ngay trên điện thoại**,
+hỗ trợ nhiều ngôn ngữ phổ biến. Dành cho việc học lập trình mọi lúc mọi nơi.
+
+---
+
+## 1. Tính năng chính
+
+- **Màn hình chính**: hiển thị các project dưới dạng lưới ô vuông (2 ô mỗi hàng), có nút dấu cộng (+) để tạo project mới.
+- **Tạo project**: chọn ngôn ngữ, đặt tên và mô tả.
+- **Màn hình soạn thảo** (chia trên – dưới):
+  - Phần **trên**: ô viết code, có **số dòng** và **tô màu cú pháp** (từ khóa, chuỗi, số, chú thích).
+  - Thanh nút ở **giữa**: `Chạy` ▶, `Build + Chạy`, `Build` (chỉ kiểm tra lỗi, không chạy), `Hoàn tác`, `Làm lại`, `Lưu`.
+  - Phần **dưới**: khung hiển thị kết quả hoặc báo lỗi.
+- **Tự động lưu** code khi rời màn hình; dữ liệu lưu trong máy nên **không mất khi tắt app**.
+
+## 2. Ngôn ngữ và cách chạy
+
+| Ngôn ngữ | Cách chạy | Cần Internet? |
+|----------|-----------|----------------|
+| Python | Chạy thật ngay trong app (thư viện Chaquopy) | **Không** — offline hoàn toàn |
+| JavaScript | Chạy thật ngay trong app (thư viện Rhino) | **Không** — offline hoàn toàn |
+| C++ | Gửi lên trình dịch online (Piston) | **Có** |
+| C | Gửi lên trình dịch online (Piston) | **Có** |
+| Java | Gửi lên trình dịch online (Piston) | **Có** |
+
+> Với C++, C, Java: nếu **không có mạng**, app sẽ hiện thông báo *"Không có kết nối Internet"* và hướng dẫn bật mạng.
+> Python và JavaScript luôn chạy được kể cả khi tắt hoàn toàn Internet.
+
+Vì sao C++/Java phải chạy online? Để dịch (biên dịch) 2 ngôn ngữ này **hoàn toàn offline trên điện thoại**
+cần nhúng cả một bộ biên dịch rất lớn vào app — đây là một dự án riêng rất tốn công. Giải pháp hiện tại
+gửi code lên máy chủ dịch miễn phí **Piston** (emkc.org, không cần đăng ký khóa). Có thể bổ sung chạy
+offline cho các ngôn ngữ này về sau mà không phải sửa lại giao diện.
+
+---
+
+## 3. Cách tạo file APK (cài lên điện thoại)
+
+### Yêu cầu
+- Máy tính cài **Android Studio** (bản mới, ví dụ Koala/Ladybug trở lên — đã kèm sẵn bộ công cụ Android SDK).
+- Lần build đầu tiên **cần Internet** để Android Studio tự tải thư viện và bộ Python của Chaquopy về.
+  Sau khi cài app rồi thì Python chạy offline bình thường.
+
+### Cách 1 — Dùng Android Studio (dễ nhất)
+1. Mở Android Studio → **File > Open** → chọn thư mục `CodeLab` này.
+2. Chờ Android Studio tải thư viện xong (thanh dưới cùng chạy hết).
+3. Cắm điện thoại (đã bật *gỡ lỗi USB*) hoặc tạo máy ảo, rồi bấm nút **Run ▶**. App sẽ cài và chạy.
+4. Để xuất **file APK** để chia sẻ/cài tay: menu **Build > Build Bundle(s) / APK(s) > Build APK(s)**.
+   File APK sẽ nằm ở: `app/build/outputs/apk/debug/app-debug.apk`.
+
+### Cách 2 — Dùng dòng lệnh
+Trong thư mục `CodeLab` (máy đã cài Android SDK và đặt biến môi trường `ANDROID_HOME`):
+
+```bash
+# Tạo file APK bản thử nghiệm (debug)
+./gradlew assembleDebug
+# → app/build/outputs/apk/debug/app-debug.apk
+
+# Tạo file APK bản phát hành (cần tự ký để cài lên máy thật)
+./gradlew assembleRelease
+```
+
+> Nếu báo lỗi *"SDK location not found"*: hãy mở dự án bằng Android Studio một lần (nó tự tạo file
+> `local.properties` chỉ đường tới Android SDK), hoặc tự tạo file `local.properties` với nội dung
+> `sdk.dir=/duong/dan/toi/Android/Sdk`.
+
+---
+
+## 4. Cấu trúc thư mục chính
+
+```
+CodeLab/
+├── app/
+│   ├── build.gradle.kts          # Khai báo thư viện và cấu hình app
+│   └── src/main/
+│       ├── AndroidManifest.xml   # Khai báo quyền (Internet) và màn hình chính
+│       ├── java/com/codelab/app/
+│       │   ├── MainActivity.kt           # Màn hình gốc, điều hướng
+│       │   ├── CodeLabApp.kt             # Khởi động Python khi mở app
+│       │   ├── model/                    # Dữ liệu: Project, Language
+│       │   ├── data/ProjectRepository.kt # Lưu/đọc project (offline, trong máy)
+│       │   ├── exec/                     # Các bộ chạy code (Python, JS, online)
+│       │   ├── editor/                   # Ô soạn thảo: tô màu, số dòng, undo/redo
+│       │   └── ui/                       # Màn hình chính, hộp thoại, màn hình soạn thảo
+│       ├── python/code_runner.py         # Mã Python nhúng để chạy code offline
+│       └── res/                          # Giao diện (layout), màu, icon
+└── README.md
+```
+
+## 5. Phiên bản công cụ (đã kiểm tra tương thích)
+
+- Gradle 8.9 · Android Gradle Plugin 8.6.1 · Kotlin 1.9.24
+- compileSdk / targetSdk 34 (Android 14) · minSdk 24 (chạy từ Android 7.0)
+- Chaquopy 16.0.0 (Python 3.11) · Rhino 1.7.14 · OkHttp 4.12.0
+
+## 6. Ghi chú / hướng mở rộng
+
+- Muốn thêm ngôn ngữ mới: thêm một mục trong `model/Language.kt` (và chọn chạy offline hay online).
+- Muốn đổi máy chủ dịch online: sửa đường dẫn trong `exec/OnlineExecutor.kt`.
+- Có thể thêm tính năng nhập dữ liệu bàn phím (stdin), chia sẻ code, đổi giao diện sáng/tối...

@@ -1,0 +1,11 @@
+# File do Android Studio / Gradle tự sinh, không cần đưa lên kho mã
+*.iml
+.gradle/
+/local.properties
+.idea/
+.DS_Store
+build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
