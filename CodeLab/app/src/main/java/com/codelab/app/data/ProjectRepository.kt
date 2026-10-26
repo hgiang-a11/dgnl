@@ -75,13 +75,6 @@ class ProjectRepository private constructor(context: Context) {
         saveToDisk()
     }
 
-    /** Lưu dữ liệu nhập của lần chạy gần nhất (để gợi ý lại lần sau). */
-    fun saveInput(id: String, input: String) {
-        val p = get(id) ?: return
-        p.lastInput = input
-        saveToDisk()
-    }
-
     /** Xóa một project. */
     fun delete(id: String) {
         projects.removeAll { it.id == id }

@@ -17,27 +17,35 @@ class PythonExecutor(context: Context) : CodeExecutor {
         }
     }
 
-    override fun execute(code: String, mode: ExecMode, stdin: String): ExecResult {
-        return try {
-            val py = Python.getInstance()
-            val module = py.getModule("code_runner")
+    override fun execute(code: String, mode: ExecMode, input: InputProvider?): ExecResult {
+        // Python dùng chung sys.stdout/input() cho cả app, nên mỗi lúc chỉ chạy một chương trình
+        return synchronized(LOCK) {
+            try {
+                val py = Python.getInstance()
+                val module = py.getModule("code_runner")
 
-            when (mode) {
-                ExecMode.BUILD_ONLY -> {
-                    val error = module.callAttr("check_syntax", code).toString()
-                    if (error.isEmpty()) {
-                        ExecResult("✓ Không phát hiện lỗi cú pháp.", isError = false)
-                    } else {
-                        ExecResult(error, isError = true)
+                when (mode) {
+                    ExecMode.BUILD_ONLY -> {
+                        val error = module.callAttr("check_syntax", code).toString()
+                        if (error.isEmpty()) {
+                            ExecResult("✓ Không phát hiện lỗi cú pháp.", isError = false)
+                        } else {
+                            ExecResult(error, isError = true)
+                        }
+                    }
+                    else -> {
+                        // input() trong chương trình sẽ gọi input.requestLine(...) và chờ người dùng gõ
+                        val output = module.callAttr("run_code", code, input).toString()
+                        ExecResult(output, isError = false)
                     }
                 }
-                else -> {
-                    val output = module.callAttr("run_code", code, stdin).toString()
-                    ExecResult(output, isError = false)
-                }
+            } catch (e: Exception) {
+                ExecResult("Lỗi khi chạy Python: ${e.message}", isError = true)
             }
-        } catch (e: Exception) {
-            ExecResult("Lỗi khi chạy Python: ${e.message}", isError = true)
         }
+    }
+
+    private companion object {
+        val LOCK = Any()
     }
 }

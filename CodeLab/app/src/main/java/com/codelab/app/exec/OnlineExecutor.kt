@@ -25,7 +25,7 @@ class OnlineExecutor(
     /** Lỗi khi máy chủ trả về mã HTTP không thành công. */
     private class HttpError(val code: Int, val body: String) : IOException("HTTP $code")
 
-    override fun execute(code: String, mode: ExecMode, stdin: String): ExecResult {
+    override fun execute(code: String, mode: ExecMode, input: InputProvider?): ExecResult {
         // Bước 1: kiểm tra mạng
         if (!NetworkUtil.isOnline(context)) {
             return ExecResult(
@@ -46,22 +46,17 @@ class OnlineExecutor(
                     isError = true
                 )
 
-            // Bước 3: gửi code + dữ liệu nhập lên để dịch và chạy.
-            // Dữ liệu nhập luôn kết thúc bằng xuống dòng (giống bấm Enter sau giá trị cuối).
-            val input = if (stdin.isEmpty() || stdin.endsWith("\n")) stdin else stdin + "\n"
-            // Nếu được, thêm đoạn code in lại giá trị đã nhập ngay sau câu hỏi (C, C++)
-            val wantEcho = input.isNotBlank() && mode != ExecMode.BUILD_ONLY &&
-                InputDetector.canEchoOnline(language, code)
-            var echoed = wantEcho
-            var response = compile(compiler, code, input, wantEcho)
-            if (wantEcho && WandboxApi.failedInAddedCode(response, code.lines().size)) {
-                // Đoạn code thêm vào bị lỗi (hiếm) -> dịch lại đúng code của người dùng
-                response = compile(compiler, code, input, echoInput = false)
-                echoed = false
-            }
-
-            // Bước 4: đọc kết quả (nếu không in lại được thì hiện dữ liệu nhập ở khung riêng)
-            WandboxApi.toResult(response, mode, shownInput = if (echoed) null else input)
+            // Bước 3: dịch và chạy; nếu chương trình cần nhập thì hỏi người dùng
+            // ngay ở khung kết quả rồi chạy tiếp (xem OnlineSession)
+            OnlineSession(language, code, mode, input) { preparedCode, options, stdin ->
+                val body = JSONObject()
+                    .put("compiler", compiler)
+                    .put("code", preparedCode)
+                    .put("stdin", stdin)
+                    .put("save", false)
+                if (options.isNotEmpty()) body.put("compiler-option-raw", options)
+                JSONObject(post(WandboxApi.COMPILE_URL, body.toString()))
+            }.run()
         } catch (e: HttpError) {
             if (e.code == 429 || e.code == 503) {
                 ExecResult(
@@ -88,18 +83,6 @@ class OnlineExecutor(
         } catch (e: Exception) {
             ExecResult("⚠ Lỗi khi dịch online: ${e.message}", isError = true)
         }
-    }
-
-    /** Gửi code lên Wandbox để dịch và chạy, trả về kết quả dạng JSON. */
-    private fun compile(compiler: String, code: String, input: String, echoInput: Boolean): JSONObject {
-        val body = JSONObject()
-            .put("compiler", compiler)
-            .put("code", WandboxApi.prepareCode(language, code, echoInput))
-            .put("stdin", input)
-            .put("save", false)
-        val options = WandboxApi.compilerOptions(language, echoInput)
-        if (options.isNotEmpty()) body.put("compiler-option-raw", options)
-        return JSONObject(post(WandboxApi.COMPILE_URL, body.toString()))
     }
 
     // ---------- Chọn trình dịch (nhớ lại vài ngày để đỡ tải danh sách nhiều lần) ----------

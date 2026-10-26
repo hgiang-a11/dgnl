@@ -4,10 +4,19 @@ import com.codelab.app.model.Language
 
 /**
  * Nhận biết code có dùng lệnh NHẬP dữ liệu không (cin, scanf, input(), Scanner...),
- * để hỏi người dùng gõ trước dữ liệu nhập trước khi chạy.
+ * và chọn cách cho người dùng nhập khi chạy online.
  * Phần chú thích (comment) được bỏ qua để không báo nhầm.
  */
 object InputDetector {
+
+    /**
+     * Cách cho người dùng nhập dữ liệu khi chạy trên máy chủ (C, C++, Java):
+     *  - CIN_ECHO: C++ đọc bằng cin/getline -> thêm đoạn code dừng chương trình đúng lúc cần nhập.
+     *  - STDIO_ECHO: C (hoặc C++ chỉ dùng scanf...) -> tương tự, cho scanf, getchar, fgets...
+     *  - JAVA_SCANNER: Java dùng Scanner -> biết lúc cần nhập nhờ lỗi NoSuchElementException.
+     *  - UPFRONT: không biết được lúc nào cần nhập -> người dùng gõ trước toàn bộ dữ liệu.
+     */
+    enum class OnlinePlan { CIN_ECHO, STDIO_ECHO, JAVA_SCANNER, UPFRONT }
 
     private val patterns = mapOf(
         Language.PYTHON to Regex("""\binput\s*\(|sys\.stdin"""),
@@ -16,6 +25,9 @@ object InputDetector {
         Language.C to Regex("""\bscanf\s*\(|\bgetchar\s*\(|\bfgets\s*\(|\bgets\s*\(|\bf?getc\s*\("""),
         Language.JAVA to Regex("""\bScanner\b|System\.in\b|BufferedReader""")
     )
+
+    private val cppCin = Regex("""\bcin\b|\bgetline\s*\(""")
+    private val cppStdio = Regex("""\bscanf\s*\(|\bgetchar\s*\(|\bfgets\s*\(|\bgets\s*\(""")
 
     /** Code có đọc dữ liệu nhập hay không. */
     fun needsInput(language: Language, code: String): Boolean =
@@ -30,22 +42,26 @@ object InputDetector {
         Language.JAVA -> "Scanner"
     }
 
-    /**
-     * Với ngôn ngữ dịch online: có thể hiện lại giá trị đã nhập ngay sau câu hỏi
-     * (giống màn hình dòng lệnh) hay không.
-     *  - C: được (dữ liệu đọc qua scanf, getchar, fgets...).
-     *  - C++: được nếu chỉ đọc bằng cin/getline (không trộn scanf, không tắt đồng bộ
-     *    bằng sync_with_stdio). Trường hợp còn lại sẽ hiện dữ liệu nhập ở một khung riêng.
-     *  - Java: không (dữ liệu nhập hiện ở khung riêng).
-     */
-    fun canEchoOnline(language: Language, code: String): Boolean {
+    /** Chọn cách cho người dùng nhập dữ liệu khi chạy online (xem [OnlinePlan]). */
+    fun onlinePlan(language: Language, code: String): OnlinePlan {
         val c = stripComments(language, code)
         return when (language) {
-            Language.C -> true
-            Language.CPP ->
-                Regex("""\bcin\b|\bgetline\s*\(""").containsMatchIn(c) &&
-                    !Regex("""sync_with_stdio|\bscanf\s*\(|\bgetchar\s*\(|\bfgets\s*\(|\bgets\s*\(""").containsMatchIn(c)
-            else -> false
+            Language.C -> OnlinePlan.STDIO_ECHO
+            Language.CPP -> {
+                val usesCin = cppCin.containsMatchIn(c)
+                val usesStdio = cppStdio.containsMatchIn(c)
+                when {
+                    // Tắt đồng bộ cin với scanf: cin dùng bộ đệm riêng, không theo dõi được
+                    c.contains("sync_with_stdio") -> OnlinePlan.UPFRONT
+                    usesCin && !usesStdio -> OnlinePlan.CIN_ECHO
+                    usesStdio && !usesCin -> OnlinePlan.STDIO_ECHO
+                    else -> OnlinePlan.UPFRONT
+                }
+            }
+            Language.JAVA ->
+                if (c.contains("Scanner") && !c.contains("BufferedReader")) OnlinePlan.JAVA_SCANNER
+                else OnlinePlan.UPFRONT
+            else -> OnlinePlan.UPFRONT
         }
     }
 

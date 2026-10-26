@@ -14,9 +14,8 @@ import org.mozilla.javascript.ScriptableObject
 class JavaScriptExecutor : CodeExecutor {
 
     /** Đối tượng Java dùng để JavaScript gọi về: thu nội dung in ra và đọc dữ liệu nhập. */
-    class OutputCollector(stdin: String) {
+    class OutputCollector(private val input: InputProvider?) {
         val builder = StringBuilder()
-        private val inputLines = ArrayDeque(if (stdin.isEmpty()) emptyList() else stdin.removeSuffix("\n").split("\n"))
 
         fun print(text: String) {
             builder.append(text).append('\n')
@@ -26,11 +25,11 @@ class JavaScriptExecutor : CodeExecutor {
             builder.append(text)
         }
 
-        /** Lấy dòng dữ liệu nhập tiếp theo; trả về null khi đã hết. */
-        fun readLine(): String? = inputLines.removeFirstOrNull()?.removeSuffix("\r")
+        /** Chờ người dùng gõ một dòng (hiện phần kết quả đã có); null khi kết thúc nhập. */
+        fun readLine(): String? = input?.requestLine(builder.toString())
     }
 
-    override fun execute(code: String, mode: ExecMode, stdin: String): ExecResult {
+    override fun execute(code: String, mode: ExecMode, input: InputProvider?): ExecResult {
         val rhino = Context.enter()
         // Trên Android bắt buộc đặt mức tối ưu = -1 (chạy kiểu thông dịch),
         // vì Android không cho sinh mã máy động như máy tính.
@@ -38,7 +37,7 @@ class JavaScriptExecutor : CodeExecutor {
         // Bật cú pháp JavaScript hiện đại (ES6): let, const, hàm mũi tên...
         rhino.languageVersion = Context.VERSION_ES6
 
-        val collector = OutputCollector(stdin)
+        val collector = OutputCollector(input)
         return try {
             val scope = rhino.initStandardObjects()
 

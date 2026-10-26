@@ -12,8 +12,6 @@ import java.util.UUID
  * @param code      Nội dung code đang được lưu.
  * @param createdAt Thời điểm tạo (mili-giây).
  * @param updatedAt Thời điểm sửa gần nhất (mili-giây).
- * @param lastInput Dữ liệu nhập (cho cin, input()...) lần chạy gần nhất, để gợi ý lại lần sau.
- *                  Có thể null với dự án tạo từ bản app cũ.
  */
 data class Project(
     val id: String = UUID.randomUUID().toString(),
@@ -22,8 +20,7 @@ data class Project(
     var languageId: String,
     var code: String,
     val createdAt: Long = System.currentTimeMillis(),
-    var updatedAt: Long = System.currentTimeMillis(),
-    var lastInput: String? = null
+    var updatedAt: Long = System.currentTimeMillis()
 ) {
     /** Lấy đối tượng ngôn ngữ tương ứng. */
     val language: Language

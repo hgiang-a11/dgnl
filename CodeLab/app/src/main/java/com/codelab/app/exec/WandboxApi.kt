@@ -15,6 +15,12 @@ object WandboxApi {
     const val LIST_URL = "https://wandbox.org/api/list.json"
     const val COMPILE_URL = "https://wandbox.org/api/compile.json"
 
+    /** Dấu hiệu đoạn code thêm vào in ra khi chương trình cần nhập thêm dữ liệu. */
+    const val NEED_INPUT_MARKER = "\u0001\u0002CODELAB_NEED_INPUT"
+
+    /** Có thêm đoạn code in lại dữ liệu nhập không, và loại nào. */
+    enum class Echo { NONE, CIN, STDIO }
+
     /**
      * Chọn tên trình dịch cho một ngôn ngữ từ danh sách list.json của Wandbox.
      * Ưu tiên các tên trong preferredCompilers; nếu không có thì chọn bản mới nhất.
@@ -50,87 +56,115 @@ object WandboxApi {
     )
 
     /**
-     * Đoạn code thêm vào CUỐI chương trình C++ để giá trị đọc bằng cin được in lại ngay sau
-     * câu hỏi, giống màn hình dòng lệnh. Nó thay bộ đệm của cin bằng một bộ đệm vừa đọc vừa
-     * in lại từng ký tự. Không dùng từ khóa "int" để không vướng "#define int long long".
+     * Đoạn code thêm vào CUỐI chương trình C++ đọc bằng cin. Nó thay bộ đệm của cin bằng một
+     * bộ đệm vừa đọc vừa in lại từng ký tự, nên giá trị đã nhập hiện ngay sau câu hỏi.
+     * Khi hết dữ liệu nhập mà CODELAB_STOP_AT_EOF_ = 1: in dấu hiệu "cần nhập" rồi dừng chương
+     * trình, để app hỏi người dùng và chạy lại. Không dùng từ khóa "int" để không vướng
+     * "#define int long long".
      */
-    private val cppEchoSnippet = """
-        // ---- CodeLab: hiện dữ liệu đã nhập (cin) ngay trong kết quả, giống màn hình dòng lệnh ----
-        #include <iostream>
-        #include <streambuf>
-        namespace codelab_echo_ {
-        class EchoBuf : public std::streambuf {
-        public:
-            EchoBuf(std::streambuf* in, std::streambuf* out) : in_(in), out_(out), ch_(0) {}
-        protected:
-            std::streambuf::int_type underflow() override {
-                std::streambuf::int_type c = in_->sbumpc();
-                if (traits_type::eq_int_type(c, traits_type::eof())) return c;
-                ch_ = traits_type::to_char_type(c);
-                out_->sputc(ch_);
-                setg(&ch_, &ch_, &ch_ + 1);
-                return c;
+    private const val CIN_SNIPPET = """
+// ---- CodeLab: hiện dữ liệu đã nhập (cin) ngay trong kết quả, giống màn hình dòng lệnh ----
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include <streambuf>
+#define CODELAB_STOP_AT_EOF_ @STOP@
+namespace codelab_echo_ {
+class EchoBuf : public std::streambuf {
+public:
+    EchoBuf(std::streambuf* in, std::streambuf* out) : in_(in), out_(out), ch_(0) {}
+protected:
+    std::streambuf::int_type underflow() override {
+        std::streambuf::int_type c = in_->sbumpc();
+        if (traits_type::eq_int_type(c, traits_type::eof())) {
+            if (CODELAB_STOP_AT_EOF_) {
+                out_->sputn("\x01\x02" "CODELAB_NEED_INPUT", 20);
+                out_->pubsync();
+                std::fflush(stdout);
+                std::_Exit(0);
             }
-        private:
-            std::streambuf* in_;
-            std::streambuf* out_;
-            char ch_;
-        };
-        struct Installer {
-            Installer() {
-                static EchoBuf buf(std::cin.rdbuf(), std::cout.rdbuf());
-                std::cin.rdbuf(&buf);
-            }
-        };
-        static Installer installer_;
+            return c;
         }
-    """.trimIndent()
+        ch_ = traits_type::to_char_type(c);
+        out_->sputc(ch_);
+        setg(&ch_, &ch_, &ch_ + 1);
+        return c;
+    }
+private:
+    std::streambuf* in_;
+    std::streambuf* out_;
+    char ch_;
+};
+struct Installer {
+    Installer() {
+        static EchoBuf buf(std::cin.rdbuf(), std::cout.rdbuf());
+        std::cin.rdbuf(&buf);
+    }
+};
+static Installer installer_;
+}
+"""
 
     /**
-     * Đoạn code thêm vào CUỐI chương trình C: thay "stdin" bằng một luồng đọc từng ký tự
-     * và in lại ký tự đó (cho scanf, getchar, fgets...). Cần tùy chọn dịch -D_GNU_SOURCE.
+     * Đoạn code thêm vào CUỐI chương trình C (hoặc C++ chỉ dùng scanf): thay "stdin" bằng một
+     * luồng đọc từng ký tự và in lại ký tự đó (cho scanf, getchar, fgets...). Hết dữ liệu thì
+     * xử lý giống đoạn của cin. Với C cần tùy chọn dịch -D_GNU_SOURCE.
      */
-    private val cEchoSnippet = """
-        /* ---- CodeLab: hiện dữ liệu đã nhập (scanf, getchar...) ngay trong kết quả ---- */
-        #include <stdio.h>
-        #include <unistd.h>
-        static ssize_t codelab_echo_read_(void *cookie, char *buf, size_t size) {
-            ssize_t n;
-            (void)cookie;
-            if (size == 0) return 0;
-            n = read(0, buf, 1);
-            if (n > 0) fwrite(buf, 1, (size_t)n, stdout);
-            return n;
-        }
-        __attribute__((constructor)) static void codelab_echo_install_(void) {
-            cookie_io_functions_t io = { codelab_echo_read_, NULL, NULL, NULL };
-            FILE *f = fopencookie(NULL, "r", io);
-            if (f != NULL) { setvbuf(f, NULL, _IONBF, 0); stdin = f; }
-        }
-    """.trimIndent()
+    private const val STDIO_SNIPPET = """
+/* ---- CodeLab: hiện dữ liệu đã nhập (scanf, getchar...) ngay trong kết quả ---- */
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#define CODELAB_STOP_AT_EOF_ @STOP@
+static ssize_t codelab_echo_read_(void *cookie, char *buf, size_t size) {
+    ssize_t n;
+    (void)cookie;
+    if (size == 0) return 0;
+    n = read(0, buf, 1);
+    if (n > 0) {
+        fwrite(buf, 1, (size_t)n, stdout);
+    } else if (CODELAB_STOP_AT_EOF_) {
+        fputs("\x01\x02" "CODELAB_NEED_INPUT", stdout);
+        fflush(stdout);
+        _exit(0);
+    }
+    return n;
+}
+__attribute__((constructor)) static void codelab_echo_install_(void) {
+    cookie_io_functions_t io = { codelab_echo_read_, NULL, NULL, NULL };
+    FILE *f = fopencookie(NULL, "r", io);
+    if (f != NULL) { setvbuf(f, NULL, _IONBF, 0); stdin = f; }
+}
+"""
 
     /**
      * Chuẩn bị code trước khi gửi đi.
      * - Java: Wandbox lưu code vào file prog.java, mà Java bắt buộc lớp "public" phải
      *   nằm trong file trùng tên lớp. Vì vậy bỏ chữ "public" trước các lớp ngoài cùng
      *   (Wandbox tự tìm lớp có hàm main để chạy).
-     * - echoInput = true (C/C++): thêm đoạn code ở CUỐI file để in lại dữ liệu đã nhập.
+     * - echo khác NONE: thêm đoạn code ở CUỐI file để in lại dữ liệu đã nhập; stopAtEof = true
+     *   thì chương trình dừng lại khi cần nhập thêm (để app hỏi người dùng).
      * Code của người dùng không bị thêm/bớt dòng nào nên báo lỗi vẫn đúng dòng.
      */
-    fun prepareCode(language: Language, code: String, echoInput: Boolean = false): String {
+    fun prepareCode(
+        language: Language,
+        code: String,
+        echo: Echo = Echo.NONE,
+        stopAtEof: Boolean = false
+    ): String {
         val base = if (language == Language.JAVA) code.replace(publicTopLevelType, "\$1") else code
-        if (!echoInput) return base
-        val snippet = when (language) {
-            Language.CPP -> cppEchoSnippet
-            Language.C -> cEchoSnippet
-            else -> return base
+        val template = when (echo) {
+            Echo.NONE -> return base
+            Echo.CIN -> CIN_SNIPPET
+            Echo.STDIO -> STDIO_SNIPPET
         }
+        val snippet = template.trim('\n').replace("@STOP@", if (stopAtEof) "1" else "0")
         return base + (if (base.endsWith("\n")) "" else "\n") + "\n" + snippet + "\n"
     }
 
-    /** Tùy chọn thêm cho trình dịch (đoạn code in lại dữ liệu nhập của C cần -D_GNU_SOURCE). */
-    fun compilerOptions(language: Language, echoInput: Boolean): String =
-        if (echoInput && language == Language.C) "-D_GNU_SOURCE" else ""
+    /** Tùy chọn thêm cho trình dịch (đoạn code dùng stdio của C cần -D_GNU_SOURCE). */
+    fun compilerOptions(language: Language, echo: Echo): String =
+        if (echo == Echo.STDIO && language == Language.C) "-D_GNU_SOURCE" else ""
 
     /**
      * Lỗi dịch có nằm trong phần code app thêm vào không (số dòng lớn hơn số dòng của người dùng).
@@ -142,33 +176,63 @@ object WandboxApi {
             .any { (it.groupValues[1].toIntOrNull() ?: 0) > userLineCount }
     }
 
+    // Dòng báo lỗi của trình dịch (gcc, clang, javac, trình liên kết): "...: error: ..."
+    private val compileErrorLine = Regex("""(?m)(^|[\s:])(fatal )?error:""")
+
+    /** Dịch có lỗi không: trình dịch báo "error:" (chỉ có "warning:" thì vẫn là dịch thành công). */
+    fun compileFailed(res: JSONObject): Boolean {
+        val compilerMsg = res.optString("compiler_output") + res.optString("compiler_error")
+        return res.optString("status") != "0" && compileErrorLine.containsMatchIn(compilerMsg)
+    }
+
     /**
      * Đọc kết quả trả về từ compile.json và chuyển thành nội dung hiển thị cho người dùng.
+     *
      * @param shownInput Dữ liệu nhập cần hiện ở khung riêng (khi không in lại được ngay sau
-     *                   câu hỏi, vd Java); null nếu không cần.
+     *                   câu hỏi); null nếu không cần.
+     * @param detectJavaInputRequest true: lỗi NoSuchElementException của Scanner nghĩa là
+     *                   chương trình đang cần nhập thêm (không phải lỗi thật).
+     * @param typedLines Các dòng người dùng đã gõ, kèm vị trí trong kết quả nơi chương trình
+     *                   hỏi (dùng cho Java để chèn giá trị đã nhập ngay sau câu hỏi).
      */
-    fun toResult(res: JSONObject, mode: ExecMode, shownInput: String? = null): ExecResult {
+    fun toResult(
+        res: JSONObject,
+        mode: ExecMode,
+        shownInput: String? = null,
+        detectJavaInputRequest: Boolean = false,
+        typedLines: List<Pair<Int, String>> = emptyList()
+    ): ExecResult {
         val status = res.optString("status")           // "0" = chương trình chạy xong, không lỗi
         val signal = res.optString("signal")           // vd "Segmentation fault" nếu chương trình bị dừng
         val compilerMsg = (res.optString("compiler_output") + res.optString("compiler_error")).trim()
-        val programOut = res.optString("program_output")
+        val rawOut = res.optString("program_output")
         val programErr = res.optString("program_error")
 
-        // Nếu dịch lỗi thì Wandbox không chạy chương trình -> không có các trường program_*
-        val ran = res.has("program_output") || res.has("program_error") || res.has("program_message")
-        val compileFailed = !ran && status != "0" && compilerMsg.contains("error", ignoreCase = true)
+        val failed = compileFailed(res)
 
         if (mode == ExecMode.BUILD_ONLY) {
             return when {
-                compileFailed -> ExecResult("Lỗi khi dịch:\n$compilerMsg", isError = true)
+                failed -> ExecResult("Lỗi khi dịch:\n$compilerMsg", isError = true)
                 compilerMsg.isNotEmpty() -> ExecResult("✓ Dịch thành công, có cảnh báo:\n$compilerMsg", isError = false)
                 else -> ExecResult("✓ Dịch thành công, không có lỗi.", isError = false)
             }
         }
 
-        if (compileFailed) {
+        if (failed) {
             return ExecResult("Lỗi khi dịch:\n$compilerMsg", isError = true)
         }
+
+        // Chương trình dừng lại vì cần nhập thêm dữ liệu?
+        val markerAt = rawOut.indexOf(NEED_INPUT_MARKER)
+        if (markerAt >= 0) {
+            return ExecResult(rawOut.substring(0, markerAt), isError = false, needsInput = true)
+        }
+        if (detectJavaInputRequest && status != "0" &&
+            programErr.contains("java.util.NoSuchElementException")
+        ) {
+            return ExecResult(insertTypedLines(rawOut, typedLines), isError = false, needsInput = true)
+        }
+        val programOut = insertTypedLines(rawOut, typedLines)
 
         val sb = StringBuilder()
         if (mode == ExecMode.BUILD_AND_RUN) {
@@ -203,5 +267,17 @@ object WandboxApi {
             sb.append("\n(chương trình kết thúc với mã lỗi ").append(status).append(')')
         }
         return ExecResult(sb.toString().trimEnd(), isError = crashed || badExit)
+    }
+
+    /**
+     * Chèn các dòng người dùng đã gõ vào đúng chỗ chương trình hỏi (vị trí tính trong kết quả
+     * gốc chưa chèn), để kết quả trông giống màn hình dòng lệnh. Chỉ chèn khi vị trí hợp lệ.
+     */
+    fun insertTypedLines(output: String, typedLines: List<Pair<Int, String>>): String {
+        val sb = StringBuilder(output)
+        typedLines.sortedByDescending { it.first }.forEach { (pos, line) ->
+            if (pos in 0..output.length) sb.insert(pos, line + "\n")
+        }
+        return sb.toString()
     }
 }

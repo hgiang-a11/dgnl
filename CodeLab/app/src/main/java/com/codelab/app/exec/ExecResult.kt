@@ -18,19 +18,23 @@ enum class ExecMode {
  * @param output  Nội dung hiển thị ở khung kết quả bên dưới.
  * @param isError true nếu có lỗi (để tô màu đỏ cho dễ nhận biết).
  * @param requiresInternet true nếu cần mạng nhưng hiện không có kết nối.
+ * @param needsInput true nếu chương trình dừng lại vì cần nhập thêm dữ liệu
+ *                   (khi đó output là phần kết quả tới lúc cần nhập, kết thúc bằng câu hỏi).
  */
 data class ExecResult(
     val output: String,
     val isError: Boolean,
-    val requiresInternet: Boolean = false
+    val requiresInternet: Boolean = false,
+    val needsInput: Boolean = false
 )
 
 /**
  * Giao diện chung cho tất cả bộ chạy code.
- * Lưu ý: hàm này có thể mất thời gian nên luôn gọi ở luồng nền.
+ * Lưu ý: hàm này có thể mất thời gian (và chờ người dùng nhập) nên luôn gọi ở luồng nền.
  *
- * @param stdin Dữ liệu nhập cho chương trình (cin, scanf, input()...), gõ trước khi chạy.
+ * @param input Nguồn dữ liệu nhập khi chương trình cần (cin, scanf, input()...);
+ *              null nghĩa là không có dữ liệu nhập.
  */
 interface CodeExecutor {
-    fun execute(code: String, mode: ExecMode, stdin: String = ""): ExecResult
+    fun execute(code: String, mode: ExecMode, input: InputProvider? = null): ExecResult
 }

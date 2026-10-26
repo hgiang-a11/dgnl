@@ -12,8 +12,8 @@ import androidx.fragment.app.DialogFragment
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.pressImeActionButton
 import androidx.test.espresso.action.ViewActions.replaceText
-import androidx.test.espresso.matcher.RootMatchers.isDialog
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -125,20 +125,34 @@ class UiScreensTest {
         }
     }
 
+    /** Đợi tới khi khung kết quả thỏa điều kiện (chương trình chạy ở luồng nền). */
+    private fun waitForOutput(scenario: ActivityScenario<MainActivity>, condition: (String) -> Boolean): String {
+        var output = ""
+        val deadline = System.currentTimeMillis() + 20_000
+        while (System.currentTimeMillis() < deadline) {
+            scenario.onActivity { output = it.findViewById<TextView>(R.id.output).text.toString() }
+            if (condition(output)) break
+            Thread.sleep(300)
+        }
+        instrumentation.waitForIdleSync()
+        return output
+    }
+
     /**
-     * Bấm Chạy với code có lệnh nhập: hộp nhập dữ liệu hiện ra, gõ "5", bấm Chạy,
-     * kết quả phải in lại giá trị đã nhập ngay sau câu hỏi (giống màn hình dòng lệnh).
+     * Nhập trực tiếp ở khung kết quả, chương trình có 2 lần nhập:
+     * bấm Chạy -> hiện "Nhập a: " và ô nhập -> gõ 3 + Enter -> hiện "Nhập b: " -> gõ 4 + Enter
+     * -> kết quả giống màn hình dòng lệnh. Khi gõ, ô nhập phải nằm trên bàn phím.
      */
     @Test
-    fun inputDialogFeedsProgramAndEchoesValue() {
+    fun terminalInputAsksForEachValue() {
         val repo = ProjectRepository.get(context)
         val project = Project(
-            name = "Bảng cửu chương",
-            description = "Nhập một số rồi in bảng cửu chương",
+            name = "Tính tổng hai số",
+            description = "Nhập a và b rồi in tổng",
             languageId = Language.PYTHON.id,
-            code = "n = int(input(\"Nhập bản cửu chương bạn muốn: \"))\n" +
-                "for i in range(1, 11):\n" +
-                "    print(f\"{n} x {i} = {n * i}\")\n"
+            code = "a = int(input(\"Nhập a: \"))\n" +
+                "b = int(input(\"Nhập b: \"))\n" +
+                "print(\"Tổng =\", a + b)\n"
         )
         repo.add(project)
         try {
@@ -147,22 +161,30 @@ class UiScreensTest {
                 instrumentation.waitForIdleSync()
 
                 onView(withId(R.id.btn_run)).perform(click())
-                onView(withId(R.id.input_stdin)).inRoot(isDialog()).perform(replaceText("5"))
-                screenshot("5_nhap_du_lieu")
-                onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+                assertEquals("Nhập a: ", waitForOutput(scenario) { it.endsWith("Nhập a: ") })
+                onView(withId(R.id.terminal_input)).perform(replaceText("3"), pressImeActionButton())
 
-                // Chờ chạy xong (Python chạy ở luồng nền)
-                var output = ""
-                val deadline = System.currentTimeMillis() + 20_000
-                while (System.currentTimeMillis() < deadline) {
-                    scenario.onActivity { output = it.findViewById<TextView>(R.id.output).text.toString() }
-                    if (output.contains("5 x 10 = 50")) break
-                    Thread.sleep(300)
+                assertEquals("Nhập a: 3\nNhập b: ", waitForOutput(scenario) { it.endsWith("Nhập b: ") })
+                Thread.sleep(1500)   // đợi bàn phím mở hẳn
+                screenshot("5_nhap_du_lieu")
+                scenario.onActivity { activity ->
+                    val row = activity.findViewById<View>(R.id.input_row)
+                    assertEquals(View.VISIBLE, row.visibility)
+                    val insets = ViewCompat.getRootWindowInsets(row)
+                    val imeHeight = insets?.getInsets(WindowInsetsCompat.Type.ime())?.bottom ?: 0
+                    Log.i(TAG, "Ô nhập: bàn phím cao $imeHeight px")
+                    if (imeHeight > 0) {
+                        val keyboardTop = row.rootView.height - imeHeight
+                        val rowBottom = topInWindow(row) + row.height
+                        Log.i(TAG, "Đáy ô nhập: $rowBottom, đỉnh bàn phím: $keyboardTop")
+                        assertTrue("Ô nhập bị bàn phím che", rowBottom <= keyboardTop + 2)
+                    }
                 }
+
+                onView(withId(R.id.terminal_input)).perform(replaceText("4"), pressImeActionButton())
+                val output = waitForOutput(scenario) { it.contains("Tổng = 7") }
                 screenshot("6_ket_qua_nhap")
-                assertTrue(output, output.startsWith("Nhập bản cửu chương bạn muốn: 5\n5 x 1 = 5"))
-                assertTrue(output, output.contains("5 x 10 = 50"))
-                assertEquals("5", repo.get(project.id)?.lastInput)
+                assertEquals("Nhập a: 3\nNhập b: 4\nTổng = 7", output.trim())
             }
         } finally {
             repo.delete(project.id)

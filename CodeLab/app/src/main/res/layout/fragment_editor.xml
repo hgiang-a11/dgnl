@@ -293,6 +293,73 @@
                 android:textIsSelectable="true"
                 android:textSize="13sp" />
         </ScrollView>
+
+        <!-- Ô nhập kiểu màn hình dòng lệnh: hiện khi chương trình cần nhập (cin, input()...) -->
+        <LinearLayout
+            android:id="@+id/input_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/editor_toolbar"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingLeft="12dp"
+            android:paddingTop="2dp"
+            android:paddingRight="4dp"
+            android:paddingBottom="2dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:fontFamily="monospace"
+                android:text="›"
+                android:textColor="@color/success"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/terminal_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@null"
+                android:fontFamily="monospace"
+                android:hint="Gõ dữ liệu rồi bấm Enter"
+                android:imeOptions="actionSend|flagNoExtractUi"
+                android:importantForAutofill="no"
+                android:inputType="text|textNoSuggestions"
+                android:minHeight="44dp"
+                android:singleLine="true"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="15sp" />
+
+            <ImageButton
+                android:id="@+id/btn_send"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Gửi"
+                android:src="@drawable/ic_send"
+                app:tint="@color/primary" />
+
+            <TextView
+                android:id="@+id/btn_eof"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_tool_button"
+                android:clickable="true"
+                android:focusable="false"
+                android:paddingLeft="8dp"
+                android:paddingTop="8dp"
+                android:paddingRight="8dp"
+                android:paddingBottom="8dp"
+                android:text="Kết thúc\nnhập"
+                android:textAlignment="center"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>
