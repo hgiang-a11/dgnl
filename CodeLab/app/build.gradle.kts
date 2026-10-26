@@ -17,9 +17,10 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // Chaquopy cần chỉ định các loại chip (CPU) được hỗ trợ
+        // Chaquopy cần chỉ định các loại chip (CPU) được hỗ trợ:
+        // arm64-v8a (đa số điện thoại hiện nay), armeabi-v7a (máy cũ 32-bit), x86_64 (máy ảo)
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
         }
     }
 
@@ -75,8 +76,10 @@ dependencies {
     // OkHttp: gửi code lên trình dịch online (dùng cho C++, C, Java)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    // Rhino: bộ chạy JavaScript thuần Java, chạy offline ngay trong app
-    implementation("org.mozilla:rhino:1.7.14")
+    // Rhino: bộ chạy JavaScript thuần Java, chạy offline ngay trong app.
+    // Giữ 1.7.13: bản 1.7.14 dùng lớp javax.lang.model.SourceVersion không có trên Android,
+    // sẽ làm app sập khi chạy JavaScript.
+    implementation("org.mozilla:rhino:1.7.13")
 
     // Thư viện kiểm thử (không bắt buộc cho app chạy)
     testImplementation("junit:junit:4.13.2")

@@ -25,6 +25,8 @@ class JavaScriptExecutor : CodeExecutor {
         // Trên Android bắt buộc đặt mức tối ưu = -1 (chạy kiểu thông dịch),
         // vì Android không cho sinh mã máy động như máy tính.
         rhino.optimizationLevel = -1
+        // Bật cú pháp JavaScript hiện đại (ES6): let, const, hàm mũi tên...
+        rhino.languageVersion = Context.VERSION_ES6
 
         val collector = OutputCollector()
         return try {

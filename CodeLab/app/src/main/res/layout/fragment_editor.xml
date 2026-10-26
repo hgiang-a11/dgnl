@@ -13,8 +13,8 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:background="@color/editor_topbar"
-        android:paddingHorizontal="4dp"
-        android:paddingVertical="6dp">
+        android:paddingLeft="4dp" android:paddingRight="4dp"
+        android:paddingTop="6dp" android:paddingBottom="6dp">
 
         <ImageButton
             android:id="@+id/btn_back"
@@ -79,13 +79,13 @@
         android:orientation="horizontal"
         android:background="@color/editor_toolbar"
         android:weightSum="6"
-        android:paddingVertical="4dp">
+        android:paddingTop="4dp" android:paddingBottom="4dp">
 
         <!-- Nút Chạy -->
         <LinearLayout android:id="@+id/btn_run"
             android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical"
-            android:gravity="center" android:paddingVertical="6dp"
+            android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp"
             android:clickable="true" android:focusable="true"
             android:background="?attr/selectableItemBackground">
             <ImageView android:layout_width="24dp" android:layout_height="24dp"
@@ -99,7 +99,7 @@
         <LinearLayout android:id="@+id/btn_build_run"
             android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical"
-            android:gravity="center" android:paddingVertical="6dp"
+            android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp"
             android:clickable="true" android:focusable="true"
             android:background="?attr/selectableItemBackground">
             <ImageView android:layout_width="24dp" android:layout_height="24dp"
@@ -113,7 +113,7 @@
         <LinearLayout android:id="@+id/btn_build"
             android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical"
-            android:gravity="center" android:paddingVertical="6dp"
+            android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp"
             android:clickable="true" android:focusable="true"
             android:background="?attr/selectableItemBackground">
             <ImageView android:layout_width="24dp" android:layout_height="24dp"
@@ -127,7 +127,7 @@
         <LinearLayout android:id="@+id/btn_undo"
             android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical"
-            android:gravity="center" android:paddingVertical="6dp"
+            android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp"
             android:clickable="true" android:focusable="true"
             android:background="?attr/selectableItemBackground">
             <ImageView android:layout_width="24dp" android:layout_height="24dp"
@@ -141,7 +141,7 @@
         <LinearLayout android:id="@+id/btn_redo"
             android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical"
-            android:gravity="center" android:paddingVertical="6dp"
+            android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp"
             android:clickable="true" android:focusable="true"
             android:background="?attr/selectableItemBackground">
             <ImageView android:layout_width="24dp" android:layout_height="24dp"
@@ -155,7 +155,7 @@
         <LinearLayout android:id="@+id/btn_save"
             android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical"
-            android:gravity="center" android:paddingVertical="6dp"
+            android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp"
             android:clickable="true" android:focusable="true"
             android:background="?attr/selectableItemBackground">
             <ImageView android:layout_width="24dp" android:layout_height="24dp"
@@ -171,7 +171,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/editor_output_bg"
-        android:paddingHorizontal="14dp"
+        android:paddingLeft="14dp" android:paddingRight="14dp"
         android:paddingTop="8dp"
         android:paddingBottom="4dp"
         android:text="KẾT QUẢ"

@@ -1,0 +1,74 @@
+# Tự động build file APK của app CodeLab trên máy chủ GitHub.
+# Chạy mỗi khi có thay đổi trong thư mục CodeLab, hoặc bấm tay ở tab "Actions".
+# Kết quả: file CodeLab-debug.apk ở trang Releases (thẻ "apk-moi-nhat") và trong mục Artifacts.
+name: Build APK
+
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+    paths:
+      - "CodeLab/**"
+      - ".github/workflows/build-apk.yml"
+  workflow_dispatch:
+
+# Cần quyền ghi để đăng APK lên trang Releases
+permissions:
+  contents: write
+
+# Nếu đẩy code liên tục, chỉ giữ lần build mới nhất
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: CodeLab
+
+    steps:
+      - name: Lấy mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Chaquopy dùng Python cùng phiên bản (3.11) trên máy build để xử lý mã Python của app
+      - name: Cài Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cài Gradle (có bộ nhớ đệm cho lần sau nhanh hơn)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Đặt tên file APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk CodeLab-debug.apk
+
+      - name: Lưu APK vào mục Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeLab-APK
+          path: CodeLab/CodeLab-debug.apk
+
+      - name: Đăng APK lên trang Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Xóa bản cũ (nếu có) rồi đăng bản mới, để link tải luôn trỏ tới bản mới nhất
+          gh release delete apk-moi-nhat --repo "${{ github.repository }}" --yes --cleanup-tag || true
+          gh release create apk-moi-nhat CodeLab-debug.apk \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --prerelease \
+            --title "CodeLab APK (bản mới nhất)" \
+            --notes "File APK build tự động từ nhánh ${{ github.ref_name }} (commit ${{ github.sha }}). Tải CodeLab-debug.apk về điện thoại và mở để cài đặt (cần cho phép cài app từ nguồn không xác định)."

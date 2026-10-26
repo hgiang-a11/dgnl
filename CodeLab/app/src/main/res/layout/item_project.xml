@@ -34,8 +34,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:background="#E8EEFF"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="2dp"
+            android:paddingLeft="8dp" android:paddingRight="8dp"
+            android:paddingTop="2dp" android:paddingBottom="2dp"
             android:text="Python"
             android:textColor="@color/primary"
             android:textSize="12sp" />

@@ -98,7 +98,8 @@ class EditorFragment : Fragment() {
 
     /** Lưu code hiện tại vào bộ nhớ máy. */
     private fun saveCode() {
-        if (_binding == null) return
+        // Bỏ qua nếu màn hình đã đóng hoặc project chưa nạp được (vd: đã bị xóa)
+        if (_binding == null || !::project.isInitialized) return
         repository.saveCode(project.id, binding.editor.text?.toString().orEmpty())
     }
 
@@ -114,9 +115,11 @@ class EditorFragment : Fragment() {
             else -> "Đang chạy..."
         }
 
+        // Lấy context trước khi sang luồng nền (tránh lỗi nếu màn hình bị đóng giữa chừng)
+        val appContext = requireContext().applicationContext
         viewLifecycleOwner.lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
-                ExecutorFactory.create(requireContext(), language).execute(code, mode)
+                ExecutorFactory.create(appContext, language).execute(code, mode)
             }
             // Có thể màn hình đã bị đóng trong lúc chờ
             if (_binding == null) return@launch

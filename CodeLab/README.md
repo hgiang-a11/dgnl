@@ -37,7 +37,20 @@ offline cho các ngôn ngữ này về sau mà không phải sửa lại giao di
 
 ## 3. Cách tạo file APK (cài lên điện thoại)
 
-### Yêu cầu
+### Cách nhanh nhất — Tải APK do GitHub build sẵn (không cần cài gì)
+Mỗi khi code trong thư mục `CodeLab` thay đổi, GitHub tự động build APK (quy trình ở
+`.github/workflows/build-apk.yml`, mất khoảng 5–10 phút).
+
+1. Mở trang **Releases** của kho mã trên điện thoại:
+   https://github.com/hgiang-a11/dgnl/releases/tag/apk-moi-nhat
+2. Bấm vào file **`CodeLab-debug.apk`** để tải về.
+3. Mở file vừa tải → điện thoại sẽ hỏi cho phép cài app từ nguồn không xác định → bấm **Cho phép** → **Cài đặt**.
+
+Muốn build lại bằng tay: vào tab **Actions** → chọn **Build APK** → bấm **Run workflow**.
+Nếu không thấy ở Releases, có thể tải trong mục **Artifacts** ở cuối trang của lần build
+(file nén .zip, giải nén ra sẽ có APK).
+
+### Yêu cầu (nếu tự build trên máy tính)
 - Máy tính cài **Android Studio** (bản mới, ví dụ Koala/Ladybug trở lên — đã kèm sẵn bộ công cụ Android SDK).
 - Lần build đầu tiên **cần Internet** để Android Studio tự tải thư viện và bộ Python của Chaquopy về.
   Sau khi cài app rồi thì Python chạy offline bình thường.
