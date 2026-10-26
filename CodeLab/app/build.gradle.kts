@@ -14,8 +14,8 @@ android {
         applicationId = "com.codelab.app"
         minSdk = 24          // Chạy được từ Android 7.0 trở lên
         targetSdk = 34       // Nhắm tới Android 14 (phiên bản mới)
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
 
         // Chaquopy cần chỉ định các loại chip (CPU) được hỗ trợ:
         // arm64-v8a (đa số điện thoại hiện nay), armeabi-v7a (máy cũ 32-bit), x86_64 (máy ảo)
@@ -118,4 +118,6 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:core-ktx:1.6.1")
+    // Espresso: tự động bấm nút, gõ chữ trong kiểm thử giao diện
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }

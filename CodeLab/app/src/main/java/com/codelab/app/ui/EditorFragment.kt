@@ -5,6 +5,7 @@ import android.os.SystemClock
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -14,11 +15,14 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.codelab.app.R
 import com.codelab.app.data.ProjectRepository
+import com.codelab.app.databinding.DialogProgramInputBinding
 import com.codelab.app.databinding.FragmentEditorBinding
 import com.codelab.app.exec.ExecMode
 import com.codelab.app.exec.ExecutorFactory
+import com.codelab.app.exec.InputDetector
 import com.codelab.app.model.Language
 import com.codelab.app.model.Project
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -84,9 +88,9 @@ class EditorFragment : Fragment() {
 
         // Gán hành động cho các nút
         binding.btnBack.setOnClickListener { saveCode(); parentFragmentManager.popBackStack() }
-        binding.btnRun.setOnClickListener { run(ExecMode.RUN) }
-        binding.btnBuildRun.setOnClickListener { run(ExecMode.BUILD_AND_RUN) }
-        binding.btnBuild.setOnClickListener { run(ExecMode.BUILD_ONLY) }
+        binding.btnRun.setOnClickListener { onRunClicked(ExecMode.RUN) }
+        binding.btnBuildRun.setOnClickListener { onRunClicked(ExecMode.BUILD_AND_RUN) }
+        binding.btnBuild.setOnClickListener { run(ExecMode.BUILD_ONLY, "") }
         binding.btnUndo.setOnClickListener { binding.editor.undo() }
         binding.btnRedo.setOnClickListener { binding.editor.redo() }
         binding.btnSave.setOnClickListener {
@@ -174,8 +178,50 @@ class EditorFragment : Fragment() {
         repository.saveCode(project.id, binding.editor.text?.toString().orEmpty())
     }
 
+    /**
+     * Bấm Chạy / Build+Chạy: nếu code có lệnh nhập dữ liệu (cin, scanf, input()...),
+     * hỏi người dùng gõ trước dữ liệu nhập rồi mới chạy.
+     */
+    private fun onRunClicked(mode: ExecMode) {
+        val code = binding.editor.text?.toString().orEmpty()
+        if (InputDetector.needsInput(language, code)) {
+            askForInput { input -> run(mode, input) }
+        } else {
+            run(mode, "")
+        }
+    }
+
+    /** Hộp thoại nhập dữ liệu cho chương trình (nhớ lại lần nhập trước của dự án). */
+    private fun askForInput(onRun: (String) -> Unit) {
+        val view = DialogProgramInputBinding.inflate(layoutInflater)
+        view.textHint.text = "Chương trình có dùng ${InputDetector.inputFunctionName(language)} để nhập dữ liệu. " +
+            "Hãy gõ trước dữ liệu vào ô dưới — mỗi giá trị một dòng hoặc cách nhau bởi dấu cách."
+        view.inputStdin.setText(project.lastInput.orEmpty())
+        view.inputStdin.setSelection(view.inputStdin.text?.length ?: 0)
+
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Nhập dữ liệu cho chương trình")
+            .setView(view.root)
+            .setNegativeButton("Hủy", null)
+            .setPositiveButton("▶  Chạy") { _, _ ->
+                val input = view.inputStdin.text?.toString().orEmpty()
+                repository.saveInput(project.id, input)
+                onRun(input)
+            }
+            .create()
+        dialog.window?.apply {
+            setSoftInputMode(
+                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+            )
+            setDimAmount(0.65f)
+        }
+        dialog.setOnShowListener { view.inputStdin.requestFocus() }
+        dialog.show()
+    }
+
     /** Chạy hoặc dịch code theo chế độ tương ứng với nút được bấm. */
-    private fun run(mode: ExecMode) {
+    private fun run(mode: ExecMode, input: String) {
         val code = binding.editor.text?.toString().orEmpty()
         saveCode()
 
@@ -189,14 +235,23 @@ class EditorFragment : Fragment() {
         val startedAt = SystemClock.elapsedRealtime()
         viewLifecycleOwner.lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
-                ExecutorFactory.create(appContext, language).execute(code, mode)
+                ExecutorFactory.create(appContext, language).execute(code, mode, input)
             }
             // Có thể màn hình đã bị đóng trong lúc chờ
             if (_binding == null) return@launch
             val seconds = (SystemClock.elapsedRealtime() - startedAt) / 1000.0
             val time = String.format(Locale("vi", "VN"), "%.2f giây", seconds)
 
-            binding.output.text = result.output
+            // Nhắc nếu chương trình cần nhập dữ liệu mà người dùng để trống
+            val forgotInput = mode != ExecMode.BUILD_ONLY && input.isBlank() &&
+                !result.requiresInternet && InputDetector.needsInput(language, code)
+            binding.output.text = if (forgotInput) {
+                result.output + "\n\n💡 Chương trình có dùng ${InputDetector.inputFunctionName(language)} " +
+                    "nhưng bạn chưa nhập dữ liệu, nên giá trị đọc vào có thể sai. " +
+                    "Hãy bấm Chạy lại và gõ dữ liệu vào ô nhập."
+            } else {
+                result.output
+            }
             binding.output.setTextColor(if (result.isError) errorColor else normalColor)
             binding.outputScroll.scrollTo(0, 0)
             when {

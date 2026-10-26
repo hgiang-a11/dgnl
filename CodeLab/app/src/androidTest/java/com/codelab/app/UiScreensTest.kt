@@ -4,11 +4,17 @@ import android.graphics.Bitmap
 import android.util.Log
 import android.view.View
 import android.widget.EditText
+import android.widget.TextView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.DialogFragment
 import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.replaceText
+import androidx.test.espresso.matcher.RootMatchers.isDialog
+import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.codelab.app.data.ProjectRepository
@@ -116,6 +122,50 @@ class UiScreensTest {
             }
         } finally {
             ids.forEach { repo.delete(it) }
+        }
+    }
+
+    /**
+     * Bấm Chạy với code có lệnh nhập: hộp nhập dữ liệu hiện ra, gõ "5", bấm Chạy,
+     * kết quả phải in lại giá trị đã nhập ngay sau câu hỏi (giống màn hình dòng lệnh).
+     */
+    @Test
+    fun inputDialogFeedsProgramAndEchoesValue() {
+        val repo = ProjectRepository.get(context)
+        val project = Project(
+            name = "Bảng cửu chương",
+            description = "Nhập một số rồi in bảng cửu chương",
+            languageId = Language.PYTHON.id,
+            code = "n = int(input(\"Nhập bản cửu chương bạn muốn: \"))\n" +
+                "for i in range(1, 11):\n" +
+                "    print(f\"{n} x {i} = {n * i}\")\n"
+        )
+        repo.add(project)
+        try {
+            ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+                scenario.onActivity { it.openEditor(project.id) }
+                instrumentation.waitForIdleSync()
+
+                onView(withId(R.id.btn_run)).perform(click())
+                onView(withId(R.id.input_stdin)).inRoot(isDialog()).perform(replaceText("5"))
+                screenshot("5_nhap_du_lieu")
+                onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+
+                // Chờ chạy xong (Python chạy ở luồng nền)
+                var output = ""
+                val deadline = System.currentTimeMillis() + 20_000
+                while (System.currentTimeMillis() < deadline) {
+                    scenario.onActivity { output = it.findViewById<TextView>(R.id.output).text.toString() }
+                    if (output.contains("5 x 10 = 50")) break
+                    Thread.sleep(300)
+                }
+                screenshot("6_ket_qua_nhap")
+                assertTrue(output, output.startsWith("Nhập bản cửu chương bạn muốn: 5\n5 x 1 = 5"))
+                assertTrue(output, output.contains("5 x 10 = 50"))
+                assertEquals("5", repo.get(project.id)?.lastInput)
+            }
+        } finally {
+            repo.delete(project.id)
         }
     }
 

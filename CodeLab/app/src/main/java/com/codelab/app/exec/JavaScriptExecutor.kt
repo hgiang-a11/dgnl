@@ -8,19 +8,29 @@ import org.mozilla.javascript.ScriptableObject
  * Không cần Internet.
  *
  * Rhino chưa có sẵn console.log, nên ta tự định nghĩa console.log / print
- * để thu lại nội dung và hiển thị cho người dùng.
+ * để thu lại nội dung và hiển thị cho người dùng. Dữ liệu nhập được đọc bằng
+ * prompt("câu hỏi") hoặc readline().
  */
 class JavaScriptExecutor : CodeExecutor {
 
-    /** Đối tượng Java dùng để JavaScript gọi về, thu lại nội dung in ra. */
-    class OutputCollector {
+    /** Đối tượng Java dùng để JavaScript gọi về: thu nội dung in ra và đọc dữ liệu nhập. */
+    class OutputCollector(stdin: String) {
         val builder = StringBuilder()
+        private val inputLines = ArrayDeque(if (stdin.isEmpty()) emptyList() else stdin.removeSuffix("\n").split("\n"))
+
         fun print(text: String) {
             builder.append(text).append('\n')
         }
+
+        fun write(text: String) {
+            builder.append(text)
+        }
+
+        /** Lấy dòng dữ liệu nhập tiếp theo; trả về null khi đã hết. */
+        fun readLine(): String? = inputLines.removeFirstOrNull()?.removeSuffix("\r")
     }
 
-    override fun execute(code: String, mode: ExecMode): ExecResult {
+    override fun execute(code: String, mode: ExecMode, stdin: String): ExecResult {
         val rhino = Context.enter()
         // Trên Android bắt buộc đặt mức tối ưu = -1 (chạy kiểu thông dịch),
         // vì Android không cho sinh mã máy động như máy tính.
@@ -28,14 +38,15 @@ class JavaScriptExecutor : CodeExecutor {
         // Bật cú pháp JavaScript hiện đại (ES6): let, const, hàm mũi tên...
         rhino.languageVersion = Context.VERSION_ES6
 
-        val collector = OutputCollector()
+        val collector = OutputCollector(stdin)
         return try {
             val scope = rhino.initStandardObjects()
 
             // Đưa đối tượng thu output vào môi trường JavaScript
             ScriptableObject.putProperty(scope, "__out", Context.javaToJS(collector, scope))
 
-            // Định nghĩa console.log, console.error và print
+            // Định nghĩa console.log, print và các lệnh nhập prompt / readline.
+            // Giá trị nhập được in lại ngay sau câu hỏi, giống màn hình dòng lệnh.
             val preamble = """
                 var __emit = function(args) {
                     var parts = [];
@@ -49,6 +60,21 @@ class JavaScriptExecutor : CodeExecutor {
                     error:function() { __emit(arguments); }
                 };
                 function print() { __emit(arguments); }
+                function readline() {
+                    var line = __out.readLine();
+                    if (line === null) return null;
+                    line = String(line);
+                    __out.write(line + '\n');
+                    return line;
+                }
+                function prompt(message) {
+                    if (message !== undefined && message !== null) __out.write(String(message));
+                    var line = __out.readLine();
+                    if (line === null) { __out.write('\n'); return null; }
+                    line = String(line);
+                    __out.write(line + '\n');
+                    return line;
+                }
             """.trimIndent()
             rhino.evaluateString(scope, preamble, "preamble", 1, null)
 

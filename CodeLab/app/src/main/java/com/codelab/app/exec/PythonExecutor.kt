@@ -17,7 +17,7 @@ class PythonExecutor(context: Context) : CodeExecutor {
         }
     }
 
-    override fun execute(code: String, mode: ExecMode): ExecResult {
+    override fun execute(code: String, mode: ExecMode, stdin: String): ExecResult {
         return try {
             val py = Python.getInstance()
             val module = py.getModule("code_runner")
@@ -32,7 +32,7 @@ class PythonExecutor(context: Context) : CodeExecutor {
                     }
                 }
                 else -> {
-                    val output = module.callAttr("run_code", code).toString()
+                    val output = module.callAttr("run_code", code, stdin).toString()
                     ExecResult(output, isError = false)
                 }
             }

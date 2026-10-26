@@ -16,6 +16,12 @@ hỗ trợ nhiều ngôn ngữ phổ biến. Dành cho việc học lập trình
   - Thanh nút ở **giữa**: `Chạy` ▶, `Build + Chạy`, `Build` (chỉ kiểm tra lỗi, không chạy), `Hoàn tác`, `Làm lại`, `Lưu`.
   - Phần **dưới**: khung kết quả, kèm trạng thái (hoàn thành / lỗi / không có mạng) và thời gian chạy.
   - Bố cục **cố định**: mở bàn phím thì bàn phím đè lên khung kết quả, không đẩy màn hình lên.
+- **Nhập dữ liệu cho chương trình** (`cin`, `scanf`, `input()`, `Scanner`, `prompt()`): khi bấm Chạy,
+  nếu code có lệnh nhập, app hỏi dữ liệu nhập trước (nhớ lại lần nhập trước của từng dự án).
+  Kết quả hiện giống màn hình dòng lệnh — giá trị đã nhập nằm ngay sau câu hỏi
+  (Python, JavaScript, C, C++). Với Java, dữ liệu nhập hiện ở khung riêng phía trên kết quả.
+  - Vì C/C++/Java chạy trên máy chủ một lần từ đầu đến cuối, không thể dừng giữa chừng để chờ gõ,
+    nên phải nhập trước tất cả dữ liệu (mỗi giá trị một dòng hoặc cách nhau bởi dấu cách).
 - **Tự động lưu** code khi rời màn hình; dữ liệu lưu trong máy nên **không mất khi tắt app**.
 
 ## 2. Ngôn ngữ và cách chạy

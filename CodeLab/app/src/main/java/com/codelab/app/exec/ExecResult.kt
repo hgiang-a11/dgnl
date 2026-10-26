@@ -28,7 +28,9 @@ data class ExecResult(
 /**
  * Giao diện chung cho tất cả bộ chạy code.
  * Lưu ý: hàm này có thể mất thời gian nên luôn gọi ở luồng nền.
+ *
+ * @param stdin Dữ liệu nhập cho chương trình (cin, scanf, input()...), gõ trước khi chạy.
  */
 interface CodeExecutor {
-    fun execute(code: String, mode: ExecMode): ExecResult
+    fun execute(code: String, mode: ExecMode, stdin: String = ""): ExecResult
 }
