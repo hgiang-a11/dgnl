@@ -38,12 +38,13 @@ offline cho các ngôn ngữ này về sau mà không phải sửa lại giao di
 ## 3. Cách tạo file APK (cài lên điện thoại)
 
 ### Cách nhanh nhất — Tải APK do GitHub build sẵn (không cần cài gì)
-Mỗi khi code trong thư mục `CodeLab` thay đổi, GitHub tự động build APK (quy trình ở
-`.github/workflows/build-apk.yml`, mất khoảng 5–10 phút).
+Mỗi khi code trong thư mục `CodeLab` thay đổi, GitHub tự động build APK, **cài thử trên máy ảo
+Android 14** (kiểm tra app mở được, Python/JavaScript chạy đúng) rồi mới đăng lên. Quy trình ở
+`.github/workflows/build-apk.yml`, mất khoảng 15–20 phút.
 
 1. Mở trang **Releases** của kho mã trên điện thoại:
    https://github.com/hgiang-a11/dgnl/releases/tag/apk-moi-nhat
-2. Bấm vào file **`CodeLab-debug.apk`** để tải về.
+2. Bấm vào file **`CodeLab.apk`** để tải về.
 3. Mở file vừa tải → điện thoại sẽ hỏi cho phép cài app từ nguồn không xác định → bấm **Cho phép** → **Cài đặt**.
 
 Muốn build lại bằng tay: vào tab **Actions** → chọn **Build APK** → bấm **Run workflow**.
@@ -52,8 +53,12 @@ Nếu không thấy ở Releases, có thể tải trong mục **Artifacts** ở 
 
 ### Yêu cầu (nếu tự build trên máy tính)
 - Máy tính cài **Android Studio** (bản mới, ví dụ Koala/Ladybug trở lên — đã kèm sẵn bộ công cụ Android SDK).
+- Máy tính cài **Python 3.11** (Chaquopy cần đúng phiên bản này để xử lý mã Python của app khi build).
 - Lần build đầu tiên **cần Internet** để Android Studio tự tải thư viện và bộ Python của Chaquopy về.
   Sau khi cài app rồi thì Python chạy offline bình thường.
+- App được ký bằng khóa cố định `app/codelab.keystore` (để bản mới cài đè được lên bản cũ). Khóa này
+  để công khai trong kho mã nên chỉ phù hợp app cá nhân/học tập; nếu đưa lên Play Store hãy tạo khóa
+  riêng và giữ bí mật.
 
 ### Cách 1 — Dùng Android Studio (dễ nhất)
 1. Mở Android Studio → **File > Open** → chọn thư mục `CodeLab` này.
@@ -70,8 +75,12 @@ Trong thư mục `CodeLab` (máy đã cài Android SDK và đặt biến môi tr
 ./gradlew assembleDebug
 # → app/build/outputs/apk/debug/app-debug.apk
 
-# Tạo file APK bản phát hành (cần tự ký để cài lên máy thật)
+# Tạo file APK bản phát hành (đã ký sẵn, cài lên máy thật được)
 ./gradlew assembleRelease
+# → app/build/outputs/apk/release/app-release.apk
+
+# Chạy kiểm thử trên máy ảo/điện thoại đang kết nối
+./gradlew connectedDebugAndroidTest
 ```
 
 > Nếu báo lỗi *"SDK location not found"*: hãy mở dự án bằng Android Studio một lần (nó tự tạo file
@@ -105,7 +114,8 @@ CodeLab/
 
 - Gradle 8.9 · Android Gradle Plugin 8.6.1 · Kotlin 1.9.24
 - compileSdk / targetSdk 34 (Android 14) · minSdk 24 (chạy từ Android 7.0)
-- Chaquopy 16.0.0 (Python 3.11) · Rhino 1.7.14 · OkHttp 4.12.0
+- Chaquopy 17.1.0 (Python 3.11, hỗ trợ điện thoại bộ nhớ trang 16 KB) · Rhino 1.7.13 · OkHttp 4.12.0
+  (Rhino giữ 1.7.13 vì bản 1.7.14 làm app sập trên Android)
 
 ## 6. Ghi chú / hướng mở rộng
 

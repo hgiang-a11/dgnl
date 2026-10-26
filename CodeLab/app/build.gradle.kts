@@ -22,15 +22,47 @@ android {
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
         }
+
+        // Bộ chạy kiểm thử trên máy ảo/điện thoại (dùng cho thư mục androidTest)
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // Khóa ký app CỐ ĐỊNH, để mọi bản build (kể cả trên GitHub) có cùng chữ ký
+    // -> cài bản mới đè lên bản cũ được. Khóa này để công khai trong kho mã nên chỉ
+    // phù hợp app cá nhân/học tập; nếu đưa lên Play Store cần tạo khóa riêng và giữ bí mật.
+    signingConfigs {
+        create("codelab") {
+            storeFile = file("codelab.keystore")
+            storeType = "pkcs12"
+            storePassword = "codelab123"
+            keyAlias = "codelab"
+            keyPassword = "codelab123"
+            // Ký đủ 3 kiểu chữ ký để mọi trình cài đặt/quét bảo mật đều nhận
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("codelab")
+        }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("codelab")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+
+    packaging {
+        jniLibs {
+            // Nén thư viện máy (.so) và giải nén khi cài: cách đóng gói truyền thống,
+            // tương thích với mọi điện thoại và làm file APK nhẹ hơn
+            useLegacyPackaging = true
         }
     }
 
@@ -83,4 +115,7 @@ dependencies {
 
     // Thư viện kiểm thử (không bắt buộc cho app chạy)
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:core-ktx:1.6.1")
 }

@@ -4,5 +4,6 @@ plugins {
     id("com.android.application") version "8.6.1" apply false
     id("org.jetbrains.kotlin.android") version "1.9.24" apply false
     // Chaquopy: thư viện nhúng Python vào app để chạy offline
-    id("com.chaquo.python") version "16.0.0" apply false
+    // 17.1.0: bản mới nhất, hỗ trợ điện thoại dùng bộ nhớ trang 16 KB
+    id("com.chaquo.python") version "17.1.0" apply false
 }

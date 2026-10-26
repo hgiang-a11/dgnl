@@ -1,6 +1,7 @@
 # Tự động build file APK của app CodeLab trên máy chủ GitHub.
 # Chạy mỗi khi có thay đổi trong thư mục CodeLab, hoặc bấm tay ở tab "Actions".
-# Kết quả: file CodeLab-debug.apk ở trang Releases (thẻ "apk-moi-nhat") và trong mục Artifacts.
+# Quy trình: build -> cài thử và chạy kiểm thử trên máy ảo Android -> đăng APK lên Releases.
+# APK chỉ được đăng khi cài thử và kiểm thử đều đạt.
 name: Build APK
 
 on:
@@ -24,6 +25,7 @@ concurrency:
 
 jobs:
   build:
+    name: Build APK
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -39,7 +41,7 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # Chaquopy dùng Python cùng phiên bản (3.11) trên máy build để xử lý mã Python của app
+      # Chaquopy cần Python cùng phiên bản với app (3.11) trên máy build
       - name: Cài Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -48,17 +50,93 @@ jobs:
       - name: Cài Gradle (có bộ nhớ đệm cho lần sau nhanh hơn)
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Build APK bản phát hành
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Đặt tên file APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk CodeLab-debug.apk
+        run: cp app/build/outputs/apk/release/app-release.apk CodeLab.apk
+
+      - name: Kiểm tra chữ ký và căn lề APK
+        run: |
+          BT=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)
+          "$ANDROID_HOME/build-tools/$BT/apksigner" verify --verbose CodeLab.apk | head -6
+          "$ANDROID_HOME/build-tools/$BT/zipalign" -c 4 CodeLab.apk && echo "Căn lề zip: OK"
 
       - name: Lưu APK vào mục Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: CodeLab-APK
-          path: CodeLab/CodeLab-debug.apk
+          path: CodeLab/CodeLab.apk
+
+  test:
+    name: Cài thử và kiểm thử trên máy ảo Android
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: CodeLab
+
+    steps:
+      - name: Lấy mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cài Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cài Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Lấy file APK vừa build
+        uses: actions/download-artifact@v4
+        with:
+          name: CodeLab-APK
+          path: CodeLab/dist
+
+      - name: Bật tăng tốc phần cứng cho máy ảo (KVM)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # 1) Chạy các bài kiểm thử (Python, JavaScript, mở app) trên máy ảo Android 14
+      # 2) Cài đúng file APK sẽ đăng lên Releases, mở app và kiểm tra app không bị sập
+      - name: Chạy trên máy ảo Android 14
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          working-directory: CodeLab
+          script: |
+            ./gradlew connectedDebugAndroidTest --stacktrace
+            adb install -r dist/CodeLab.apk
+            adb shell am start -W -n com.codelab.app/.MainActivity
+            sleep 10
+            adb logcat -d -b crash
+            adb shell pidof com.codelab.app
+
+  release:
+    name: Đăng APK lên Releases
+    needs: [build, test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Lấy file APK đã kiểm thử
+        uses: actions/download-artifact@v4
+        with:
+          name: CodeLab-APK
+          path: dist
 
       - name: Đăng APK lên trang Releases
         env:
@@ -66,9 +144,9 @@ jobs:
         run: |
           # Xóa bản cũ (nếu có) rồi đăng bản mới, để link tải luôn trỏ tới bản mới nhất
           gh release delete apk-moi-nhat --repo "${{ github.repository }}" --yes --cleanup-tag || true
-          gh release create apk-moi-nhat CodeLab-debug.apk \
+          gh release create apk-moi-nhat dist/CodeLab.apk \
             --repo "${{ github.repository }}" \
             --target "${{ github.sha }}" \
             --prerelease \
             --title "CodeLab APK (bản mới nhất)" \
-            --notes "File APK build tự động từ nhánh ${{ github.ref_name }} (commit ${{ github.sha }}). Tải CodeLab-debug.apk về điện thoại và mở để cài đặt (cần cho phép cài app từ nguồn không xác định)."
+            --notes "File APK build tự động từ nhánh ${{ github.ref_name }} (commit ${{ github.sha }}), đã cài thử và kiểm thử trên máy ảo Android 14. Tải CodeLab.apk về điện thoại và mở để cài đặt (cần cho phép cài app từ nguồn không xác định)."
