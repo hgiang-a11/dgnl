@@ -50,6 +50,21 @@ jobs:
       - name: Cài Gradle (có bộ nhớ đệm cho lần sau nhanh hơn)
         uses: gradle/actions/setup-gradle@v4
 
+      # Chỉ đọc danh sách trình dịch của Wandbox (không gửi code) để xem các trình dịch
+      # app sẽ chọn có tồn tại không. Không làm hỏng build nếu Wandbox tạm thời không truy cập được.
+      - name: Xem danh sách trình dịch trên Wandbox
+        continue-on-error: true
+        run: |
+          curl -sS --max-time 30 https://wandbox.org/api/list.json | python3 -c "
+          import sys, json
+          L = json.load(sys.stdin)
+          names = {c['name'] for c in L}
+          for lang in ('C++', 'C', 'Java'):
+              print(lang, '->', sorted(c['name'] for c in L if c.get('language') == lang)[:15])
+          for n in ('gcc-head', 'gcc-head-c'):
+              print(n, ':', 'CO' if n in names else 'KHONG CO')
+          "
+
       - name: Build APK bản phát hành
         run: ./gradlew assembleRelease --stacktrace
 
