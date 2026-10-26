@@ -138,15 +138,37 @@ jobs:
           name: CodeLab-APK
           path: dist
 
+      - name: Viết nội dung trang tải
+        run: |
+          cat > notes.md <<'EOF'
+          ## 📱 Tải app CodeLab cho Android
+
+          ### 👉 [BẤM VÀO ĐÂY ĐỂ TẢI CodeLab.apk](https://github.com/${{ github.repository }}/releases/download/apk-moi-nhat/CodeLab.apk)
+
+          Hoặc kéo xuống mục **Assets** ở cuối trang và bấm vào **CodeLab.apk**.
+
+          ### Cách cài đặt
+          1. Bấm link ở trên, chờ tải xong file **CodeLab.apk**.
+          2. Mở file vừa tải (bấm vào thông báo tải xuống, hoặc mở trong ứng dụng Tệp/File).
+          3. Nếu điện thoại hỏi, bấm **Cài đặt** → bật **Cho phép từ nguồn này**, rồi quay lại bấm **Cài đặt**.
+          4. Nếu Google Play Protect cảnh báo, chọn **Chi tiết khác** → **Vẫn cài đặt**.
+
+          > 💡 Nên mở trang này bằng trình duyệt **Chrome** (không mở bên trong ứng dụng GitHub hay ứng dụng chat) để tải file dễ hơn.
+
+          ---
+          Bản build tự động từ nhánh `${{ github.ref_name }}` (commit `${{ github.sha }}`), đã cài thử và kiểm thử trên máy ảo Android 14.
+          EOF
+
       - name: Đăng APK lên trang Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Xóa bản cũ (nếu có) rồi đăng bản mới, để link tải luôn trỏ tới bản mới nhất
+          # Xóa bản cũ (nếu có) rồi đăng bản mới, để link tải luôn trỏ tới bản mới nhất.
+          # Đánh dấu "Latest" để hiện ngay ở mục Releases trên trang chính của kho mã.
           gh release delete apk-moi-nhat --repo "${{ github.repository }}" --yes --cleanup-tag || true
           gh release create apk-moi-nhat dist/CodeLab.apk \
             --repo "${{ github.repository }}" \
             --target "${{ github.sha }}" \
-            --prerelease \
-            --title "CodeLab APK (bản mới nhất)" \
-            --notes "File APK build tự động từ nhánh ${{ github.ref_name }} (commit ${{ github.sha }}), đã cài thử và kiểm thử trên máy ảo Android 14. Tải CodeLab.apk về điện thoại và mở để cài đặt (cần cho phép cài app từ nguồn không xác định)."
+            --latest \
+            --title "📱 CodeLab - Tải APK (bản mới nhất)" \
+            --notes-file notes.md

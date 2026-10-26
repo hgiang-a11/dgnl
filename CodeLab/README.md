@@ -42,9 +42,10 @@ Mỗi khi code trong thư mục `CodeLab` thay đổi, GitHub tự động build
 Android 14** (kiểm tra app mở được, Python/JavaScript chạy đúng) rồi mới đăng lên. Quy trình ở
 `.github/workflows/build-apk.yml`, mất khoảng 15–20 phút.
 
-1. Mở trang **Releases** của kho mã trên điện thoại:
-   https://github.com/hgiang-a11/dgnl/releases/tag/apk-moi-nhat
-2. Bấm vào file **`CodeLab.apk`** để tải về.
+1. Mở trang tải bằng trình duyệt Chrome trên điện thoại:
+   https://github.com/hgiang-a11/dgnl/releases/latest
+   (hoặc vào trang chính của kho mã, kéo xuống mục **Releases** và bấm vào **CodeLab - Tải APK**).
+2. Bấm link **"BẤM VÀO ĐÂY ĐỂ TẢI CodeLab.apk"** (hoặc file **`CodeLab.apk`** trong mục Assets).
 3. Mở file vừa tải → điện thoại sẽ hỏi cho phép cài app từ nguồn không xác định → bấm **Cho phép** → **Cài đặt**.
 
 Muốn build lại bằng tay: vào tab **Actions** → chọn **Build APK** → bấm **Run workflow**.
