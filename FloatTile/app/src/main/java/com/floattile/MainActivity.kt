@@ -1,78 +1,60 @@
 package com.floattile
 
-import android.app.StatusBarManager
-import android.content.ComponentName
+import android.annotation.SuppressLint
 import android.content.Intent
-import android.graphics.drawable.Icon
-import android.os.Build
 import android.os.Bundle
 import android.text.format.DateFormat
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.slider.Slider
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import java.util.Date
 
 /**
- * Màn hình cài đặt chính:
- *  - chọn ứng dụng đích
- *  - chỉnh kích thước, vị trí cửa sổ (có hình xem trước)
- *  - chọn cách ép cửa sổ tự do
+ * Màn hình chính:
+ *  - lưới các ô đã tạo (bấm vào một ô để sửa), nút "Thêm ô"
+ *  - chọn cách ép cửa sổ tự do (chung cho mọi ô)
  *  - nút kiểm tra tính năng cửa sổ tự do và hướng dẫn Shizuku
  */
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var targetIcon: ImageView
-    private lateinit var targetName: TextView
-    private lateinit var targetPackage: TextView
-    private lateinit var preview: BoundsPreviewView
-    private lateinit var sliderWidth: Slider
-    private lateinit var sliderHeight: Slider
-    private lateinit var sliderPosX: Slider
-    private lateinit var sliderPosY: Slider
-    private lateinit var labelWidth: TextView
-    private lateinit var labelHeight: TextView
-    private lateinit var labelPosX: TextView
-    private lateinit var labelPosY: TextView
-    private lateinit var boundsText: TextView
+    private lateinit var tileList: RecyclerView
+    private lateinit var emptyText: TextView
+    private lateinit var countText: TextView
+    private lateinit var fab: ExtendedFloatingActionButton
     private lateinit var modeGroup: RadioGroup
     private lateinit var probeStatus: TextView
     private lateinit var shizukuStatus: TextView
+
+    private val adapter = TileAdapter { openEditor(it.config.slot) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        targetIcon = findViewById(R.id.target_icon)
-        targetName = findViewById(R.id.target_name)
-        targetPackage = findViewById(R.id.target_package)
-        preview = findViewById(R.id.preview)
-        sliderWidth = findViewById(R.id.slider_width)
-        sliderHeight = findViewById(R.id.slider_height)
-        sliderPosX = findViewById(R.id.slider_pos_x)
-        sliderPosY = findViewById(R.id.slider_pos_y)
-        labelWidth = findViewById(R.id.label_width)
-        labelHeight = findViewById(R.id.label_height)
-        labelPosX = findViewById(R.id.label_pos_x)
-        labelPosY = findViewById(R.id.label_pos_y)
-        boundsText = findViewById(R.id.bounds_text)
+        tileList = findViewById(R.id.tile_list)
+        emptyText = findViewById(R.id.tiles_empty)
+        countText = findViewById(R.id.tiles_count)
+        fab = findViewById(R.id.fab_add)
         modeGroup = findViewById(R.id.mode_group)
         probeStatus = findViewById(R.id.probe_status)
         shizukuStatus = findViewById(R.id.shizuku_status)
 
-        findViewById<Button>(R.id.btn_pick_app).setOnClickListener {
-            startActivity(Intent(this, AppPickerActivity::class.java))
-        }
-        findViewById<Button>(R.id.btn_reset_bounds).setOnClickListener {
-            Prefs.resetBounds()
-            loadSliders()
-            refreshBounds()
-        }
-        findViewById<Button>(R.id.btn_try_now).setOnClickListener {
-            // Chạy đúng quy trình như khi bấm ô cài đặt nhanh.
-            startActivity(Intent(this, LaunchActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        // Lưới 3 cột giống các ứng dụng tạo ô tắt.
+        tileList.layoutManager = GridLayoutManager(this, 3)
+        tileList.adapter = adapter
+        tileList.isNestedScrollingEnabled = false
+
+        fab.setOnClickListener {
+            val free = TileStore.firstFreeSlot()
+            if (free == null) toast(getString(R.string.no_free_slot), long = true) else openEditor(free)
         }
         findViewById<Button>(R.id.btn_diagnose).setOnClickListener {
             startActivity(Intent(this, DiagnosticsActivity::class.java))
@@ -80,95 +62,48 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btn_shizuku).setOnClickListener {
             startActivity(Intent(this, ShizukuGuideActivity::class.java))
         }
-        findViewById<Button>(R.id.btn_add_tile).setOnClickListener { requestAddTile() }
         findViewById<TextView>(R.id.version_text).text =
             getString(R.string.version_format, BuildConfig.VERSION_NAME)
 
-        setupSliders()
         setupModeGroup()
         autoDetectClaude()
     }
 
     override fun onResume() {
         super.onResume()
-        refreshTarget()
-        loadSliders()
-        refreshBounds()
+        refreshTiles()
         refreshStatus()
     }
 
-    // ----- Ứng dụng đích -----
+    private fun openEditor(slot: Int) {
+        startActivity(Intent(this, TileEditActivity::class.java).putExtra(TileEditActivity.EXTRA_SLOT, slot))
+    }
 
-    /** Nếu chưa cài đúng gói mặc định, thử tự tìm ứng dụng có chữ "claude". */
+    // ----- Danh sách ô -----
+
+    private fun refreshTiles() {
+        val items = TileStore.all().map { cfg ->
+            TileItem(cfg, TargetApp.resolve(this, cfg), TileStore.isAdded(cfg.slot))
+        }
+        adapter.submit(items)
+        emptyText.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+        countText.text = getString(R.string.tiles_count, items.size, TileStore.MAX_SLOTS)
+        fab.isEnabled = items.size < TileStore.MAX_SLOTS
+    }
+
+    /** Ô số 1 mặc định là Claude; nếu máy dùng tên gói khác có chữ "claude" thì tự sửa lại. */
     private fun autoDetectClaude() {
-        if (TargetApp.resolve(this) != null) return
-        if (Prefs.targetPackage != Prefs.DEFAULT_PACKAGE) return
+        val first = TileStore.get(1) ?: return
+        if (first.packageName != TileStore.DEFAULT_PACKAGE) return
+        if (TargetApp.resolve(this, first) != null) return
         val candidates = TargetApp.findClaudeCandidates(this)
         if (candidates.size == 1) {
-            Prefs.targetPackage = candidates[0].first
-            Prefs.targetActivity = null
-            toast("Đã tự chọn ${candidates[0].second} (${candidates[0].first})", long = true)
+            TileStore.save(this, first.copy(packageName = candidates[0].first, activityName = null))
+            toast("Đã tự chọn ${candidates[0].second} (${candidates[0].first}) cho ô số 1", long = true)
         }
     }
 
-    private fun refreshTarget() {
-        val target = TargetApp.resolve(this)
-        if (target != null) {
-            targetName.text = target.label
-            targetPackage.text = target.component.flattenToShortString()
-            targetIcon.setImageDrawable(target.icon)
-        } else {
-            targetName.text = getString(R.string.target_missing)
-            targetPackage.text = getString(R.string.target_missing_detail, Prefs.targetPackage)
-            targetIcon.setImageResource(R.drawable.ic_tile)
-        }
-    }
-
-    // ----- Kích thước & vị trí -----
-
-    private fun setupSliders() {
-        sliderWidth.setLabelFormatter { "${it.toInt()}%" }
-        sliderHeight.setLabelFormatter { "${it.toInt()}%" }
-        sliderPosX.setLabelFormatter { "${it.toInt()}%" }
-        sliderPosY.setLabelFormatter { "${it.toInt()}%" }
-        sliderWidth.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) { Prefs.widthPct = value.toInt(); refreshBounds() }
-        }
-        sliderHeight.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) { Prefs.heightPct = value.toInt(); refreshBounds() }
-        }
-        sliderPosX.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) { Prefs.posXPct = value.toInt(); refreshBounds() }
-        }
-        sliderPosY.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) { Prefs.posYPct = value.toInt(); refreshBounds() }
-        }
-    }
-
-    private fun loadSliders() {
-        setSlider(sliderWidth, Prefs.widthPct)
-        setSlider(sliderHeight, Prefs.heightPct)
-        setSlider(sliderPosX, Prefs.posXPct)
-        setSlider(sliderPosY, Prefs.posYPct)
-    }
-
-    /** Đặt giá trị thanh trượt, luôn giữ trong khoảng cho phép (tránh lỗi khi giá trị lưu bị sai). */
-    private fun setSlider(slider: Slider, value: Int) {
-        slider.value = value.toFloat().coerceIn(slider.valueFrom, slider.valueTo)
-    }
-
-    private fun refreshBounds() {
-        labelWidth.text = getString(R.string.label_width, Prefs.widthPct)
-        labelHeight.text = getString(R.string.label_height, Prefs.heightPct)
-        labelPosX.text = getString(R.string.label_pos_x, Prefs.posXPct)
-        labelPosY.text = getString(R.string.label_pos_y, Prefs.posYPct)
-        val screen = WindowBounds.screen(this)
-        val rect = WindowBounds.compute(screen, Prefs.widthPct, Prefs.heightPct, Prefs.posXPct, Prefs.posYPct)
-        boundsText.text = getString(R.string.bounds_format, WindowBounds.describe(rect), screen.width, screen.height)
-        preview.update(screen, rect, TargetApp.resolve(this)?.label ?: "?")
-    }
-
-    // ----- Cách mở -----
+    // ----- Cách mở (chung cho mọi ô) -----
 
     private fun setupModeGroup() {
         val id = when (Prefs.launchMode) {
@@ -203,36 +138,42 @@ class MainActivity : AppCompatActivity() {
         shizukuStatus.text = ShizukuHelper.describe(ShizukuHelper.status(this))
     }
 
-    // ----- Thêm ô vào bảng cài đặt nhanh -----
+    // ----- Bộ chuyển dữ liệu cho lưới ô -----
 
-    private fun requestAddTile() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            toast(getString(R.string.add_tile_manual), long = true)
-            return
+    data class TileItem(val config: TileConfig, val target: TargetInfo?, val added: Boolean)
+
+    private class TileAdapter(val onClick: (TileItem) -> Unit) : RecyclerView.Adapter<TileAdapter.Holder>() {
+        private var items: List<TileItem> = emptyList()
+
+        class Holder(view: View) : RecyclerView.ViewHolder(view) {
+            val icon: ImageView = view.findViewById(R.id.tile_icon)
+            val name: TextView = view.findViewById(R.id.tile_name)
+            val info: TextView = view.findViewById(R.id.tile_info)
         }
-        // Android 13+: hệ thống hiện hộp thoại "Thêm ô này?" (có thể không hỗ trợ trên một số giao diện hãng).
-        val sbm = getSystemService(StatusBarManager::class.java)
-        if (sbm == null) {
-            toast(getString(R.string.add_tile_manual), long = true)
-            return
+
+        @SuppressLint("NotifyDataSetChanged")
+        fun submit(list: List<TileItem>) {
+            items = list
+            notifyDataSetChanged()
         }
-        try {
-            sbm.requestAddTileService(
-                ComponentName(this, FloatTileService::class.java),
-                getString(R.string.tile_label),
-                Icon.createWithResource(this, R.drawable.ic_tile),
-                mainExecutor
-            ) { result ->
-                val msg = when (result) {
-                    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED -> "Đã thêm ô FloatTile."
-                    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED -> "Ô FloatTile đã có sẵn trong bảng cài đặt nhanh."
-                    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_NOT_ADDED -> "Bạn đã chọn không thêm ô."
-                    else -> getString(R.string.add_tile_manual)
-                }
-                toast(msg, long = true)
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder =
+            Holder(LayoutInflater.from(parent.context).inflate(R.layout.item_tile, parent, false))
+
+        override fun getItemCount(): Int = items.size
+
+        override fun onBindViewHolder(holder: Holder, position: Int) {
+            val item = items[position]
+            val ctx = holder.itemView.context
+            val icon = item.target?.icon
+            if (icon != null) holder.icon.setImageDrawable(icon) else holder.icon.setImageResource(R.drawable.ic_tile)
+            holder.name.text = item.config.name
+            holder.info.text = when {
+                item.target == null -> ctx.getString(R.string.tile_info_missing, item.config.slot)
+                item.added -> ctx.getString(R.string.tile_info_added, item.config.slot)
+                else -> ctx.getString(R.string.tile_info_not_added, item.config.slot)
             }
-        } catch (e: Exception) {
-            toast(getString(R.string.add_tile_manual), long = true)
+            holder.itemView.setOnClickListener { onClick(item) }
         }
     }
 }

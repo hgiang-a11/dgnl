@@ -21,11 +21,12 @@ object TargetApp {
      * Tìm ứng dụng đích theo cài đặt và tạo Intent (= "lời nhắn" yêu cầu hệ thống mở một màn hình).
      * Trả về null nếu ứng dụng chưa cài hoặc không có màn hình chính.
      */
+    fun resolve(context: Context, cfg: TileConfig): TargetInfo? =
+        resolve(context, cfg.packageName, cfg.activityName)
+
     @Suppress("DEPRECATION")
-    fun resolve(context: Context): TargetInfo? {
+    fun resolve(context: Context, pkg: String, act: String?): TargetInfo? {
         val pm = context.packageManager
-        val pkg = Prefs.targetPackage
-        val act = Prefs.targetActivity
 
         // Bước 1: nếu người dùng đã chọn một màn hình cụ thể, thử dùng nó trước.
         var intent: Intent? = null

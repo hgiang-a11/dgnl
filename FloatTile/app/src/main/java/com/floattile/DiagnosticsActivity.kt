@@ -117,7 +117,8 @@ class DiagnosticsActivity : AppCompatActivity() {
         }
 
         // Bước 4: mở cửa sổ thử bằng cách (a) — chỉ khi gọi được hàm ẩn.
-        val bounds = WindowBounds.fromPrefs(ctx)
+        val firstTile = TileStore.all().firstOrNull() ?: TileStore.defaultConfig(1)
+        val bounds = WindowBounds.forTile(ctx, firstTile)
         val a = if (reflectionError == null) {
             line("   ⏳ Mở cửa sổ thử nghiệm bằng cách (a)…")
             FreeformTester.probeReflection(ctx, bounds).also {
@@ -161,15 +162,20 @@ class DiagnosticsActivity : AppCompatActivity() {
             line("     " + pkgs.output.trim().ifEmpty { "(không có gói nào chứa chữ claude)" }.replace("\n", "\n     "))
         }
 
-        // Bước 6: ứng dụng đích.
-        line("⑤ Ứng dụng đích")
-        val target = TargetApp.resolve(ctx)
-        if (target != null) {
-            line("   ✅ ${target.label} — ${target.component.flattenToShortString()}")
-        } else {
-            line("   ❌ Không tìm thấy gói ${Prefs.targetPackage}. Hãy chọn lại ứng dụng đích.")
+        // Bước 6: các ô đã tạo.
+        line("⑤ Các ô đã tạo")
+        val tiles = TileStore.all()
+        if (tiles.isEmpty()) line("   ℹ️ Chưa tạo ô nào.")
+        for (t in tiles) {
+            val tg = TargetApp.resolve(ctx, t)
+            if (tg != null) {
+                line("   ✅ Ô ${t.slot} “${t.name}”: ${tg.label} — ${tg.component.flattenToShortString()}")
+            } else {
+                line("   ❌ Ô ${t.slot} “${t.name}”: không tìm thấy gói ${t.packageName}. Hãy sửa ô này.")
+            }
         }
-        line("   Khung cửa sổ sẽ dùng: ${WindowBounds.describe(bounds)}")
+        line("   • Bù thu nhỏ HyperOS: ${Prefs.hyperScalePct}%")
+        line("   • Khung gửi cho hệ thống (ô “${firstTile.name}”): ${WindowBounds.describe(bounds)}")
 
         // Lưu kết quả để ô cài đặt nhanh dùng.
         Prefs.saveProbe(ctx, a.state, a.note, b.state, b.note)

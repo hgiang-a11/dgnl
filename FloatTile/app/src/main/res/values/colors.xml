@@ -8,4 +8,5 @@
     <color name="preview_window">#553949AB</color>
     <color name="preview_text">#1A237E</color>
     <color name="probe_background">#E8EAF6</color>
+    <color name="tile_circle">#4F7FE8</color>
 </resources>

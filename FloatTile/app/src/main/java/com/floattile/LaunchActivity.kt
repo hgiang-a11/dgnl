@@ -14,7 +14,13 @@ import kotlinx.coroutines.launch
  */
 class LaunchActivity : AppCompatActivity() {
 
+    companion object {
+        /** Số ô (1..10) đã được bấm; 0 = bản nháp của nút "Mở thử". */
+        const val EXTRA_SLOT = "com.floattile.SLOT"
+    }
+
     private var retrying = false
+    private val slot: Int get() = intent.getIntExtra(EXTRA_SLOT, 1)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,14 +33,19 @@ class LaunchActivity : AppCompatActivity() {
     }
 
     private suspend fun runLaunch() {
-        // Bước 1: tìm ứng dụng đích.
-        val target = TargetApp.resolve(this)
-        if (target == null) {
-            showTargetMissing()
+        // Bước 1: đọc cài đặt của ô vừa bấm, rồi tìm ứng dụng đích.
+        val cfg = TileStore.get(slot)
+        if (cfg == null) {
+            showUnconfigured()
             return
         }
-        // Bước 2: tính khung cửa sổ theo cài đặt (80% × 60%, giữa màn hình nếu chưa đổi).
-        val bounds = WindowBounds.fromPrefs(this)
+        val target = TargetApp.resolve(this, cfg)
+        if (target == null) {
+            showTargetMissing(cfg)
+            return
+        }
+        // Bước 2: tính khung cửa sổ của ô (đã bù việc HyperOS tự thu nhỏ cửa sổ).
+        val bounds = WindowBounds.forTile(this, cfg)
 
         // Bước 3: mở theo cách người dùng chọn.
         val outcome = try {
@@ -53,19 +64,37 @@ class LaunchActivity : AppCompatActivity() {
         }
     }
 
-    private fun showTargetMissing() {
+    private fun showUnconfigured() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Ô số $slot chưa được cài đặt")
+            .setMessage("Hãy chọn ứng dụng và đặt tên cho ô này trong FloatTile.")
+            .setPositiveButton("Cài đặt ô") { _, _ -> openEditor() }
+            .setNegativeButton("Đóng", null)
+            .setOnDismissListener { finishQuietly() }
+            .show()
+    }
+
+    private fun showTargetMissing(cfg: TileConfig) {
         val candidates = TargetApp.findClaudeCandidates(this)
-        val extra = if (candidates.isNotEmpty()) {
+        val extra = if (candidates.isNotEmpty() && cfg.packageName == TileStore.DEFAULT_PACKAGE) {
             "\n\nTìm thấy ứng dụng có thể là Claude:\n" +
                 candidates.joinToString("\n") { "• ${it.second} (${it.first})" }
         } else ""
         MaterialAlertDialogBuilder(this)
-            .setTitle("Không tìm thấy ứng dụng đích")
-            .setMessage("Gói \"${Prefs.targetPackage}\" chưa được cài hoặc không có màn hình chính.$extra\n\nHãy chọn lại ứng dụng đích trong FloatTile.")
-            .setPositiveButton("Mở cài đặt") { _, _ -> openSettings() }
+            .setTitle("Không tìm thấy ứng dụng của ô “${cfg.name}”")
+            .setMessage("Gói \"${cfg.packageName}\" chưa được cài hoặc không có màn hình chính.$extra\n\nHãy chọn lại ứng dụng cho ô này.")
+            .setPositiveButton("Sửa ô") { _, _ -> if (slot in 1..TileStore.MAX_SLOTS) openEditor() else openSettings() }
             .setNegativeButton("Đóng", null)
             .setOnDismissListener { finishQuietly() }
             .show()
+    }
+
+    private fun openEditor() {
+        startActivity(
+            Intent(this, TileEditActivity::class.java)
+                .putExtra(TileEditActivity.EXTRA_SLOT, slot)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
     }
 
     private fun showFailure(target: TargetInfo, failure: LaunchOutcome.Failure) {

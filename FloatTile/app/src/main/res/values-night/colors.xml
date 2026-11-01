@@ -7,4 +7,5 @@
     <color name="preview_window">#669FA8DA</color>
     <color name="preview_text">#E8EAF6</color>
     <color name="probe_background">#1A237E</color>
+    <color name="tile_circle">#3D63C4</color>
 </resources>

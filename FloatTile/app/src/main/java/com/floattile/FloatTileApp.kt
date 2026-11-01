@@ -12,6 +12,7 @@ class FloatTileApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Prefs.init(this)
+        TileStore.init(this) // nạp danh sách ô, chuyển dữ liệu từ bản một ô (nếu có)
     }
 }
 

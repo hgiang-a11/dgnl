@@ -1,6 +1,6 @@
 # FloatTile
 
-FloatTile thêm ô **“Claude nổi”** vào bảng cài đặt nhanh (bảng kéo từ trên màn hình xuống). Bấm ô đó, ứng dụng Claude sẽ mở thành một cửa sổ nhỏ nổi ở giữa màn hình, nằm trên ứng dụng bạn đang dùng.
+FloatTile thêm các ô vào bảng cài đặt nhanh (bảng kéo từ trên màn hình xuống). Bấm một ô, ứng dụng bạn đã chọn cho ô đó sẽ mở thành một cửa sổ nhỏ nổi trên ứng dụng đang dùng. Mặc định có sẵn ô **“Claude nổi”** mở Claude ở giữa màn hình. Bạn tạo được tối đa **10 ô**, mỗi ô có tên, ứng dụng, kích thước và vị trí riêng.
 
 Ứng dụng viết bằng Kotlin, chạy từ Android 8.0 (minSdk 26). Nó được viết với máy thử là Xiaomi POCO C65 chạy HyperOS.
 
@@ -22,21 +22,34 @@ APK (file cài đặt ứng dụng Android) được GitHub tự build mỗi khi
 
 > Các bản build sau dùng chung một khóa ký (chữ ký số của ứng dụng), nên bạn cài đè trực tiếp được mà không cần gỡ bản cũ.
 
-## 3. Thêm ô vào bảng cài đặt nhanh
+## 3. Tạo ô và thêm vào bảng cài đặt nhanh
 
-**Cách 1:** mở FloatTile và bấm **“Thêm ô ngay”**. Cách này dùng được từ Android 13, nhưng một số bản HyperOS không hỗ trợ.
+**Tạo ô:** mở FloatTile, bấm **“Thêm ô”** ở dưới cùng, chọn ứng dụng, đặt tên rồi bấm **Lưu**. Bấm vào một ô trong lưới để sửa tên, đổi ứng dụng, chỉnh kích thước và vị trí, hoặc xóa ô.
 
-**Cách 2 (thủ công):**
-1. Vuốt từ **góc trên bên phải** xuống để mở Trung tâm điều khiển.
-2. Bấm biểu tượng **chỉnh sửa** (hình bút chì hoặc ô vuông, thường ở góc trên).
-3. Tìm ô **“Claude nổi”** (biểu tượng khung màn hình có ô nhỏ ở giữa).
-4. Nhấn giữ ô và kéo vào vùng các ô đang dùng, rồi bấm **Xong**.
+Android không cho ứng dụng tạo thêm ô lúc đang chạy, nên FloatTile khai báo sẵn 10 “chỗ” tên **FloatTile 1** đến **FloatTile 10**. Chỗ nào chưa dùng sẽ bị ẩn khỏi danh sách thêm ô của hệ thống.
 
-Bấm ô để mở Claude dạng nổi. **Nhấn giữ** ô để mở màn hình cài đặt của FloatTile.
+**Thêm ô vào bảng cài đặt nhanh:**
+- **Cách 1:** trong màn hình sửa ô, bấm **“Lưu và thêm vào bảng cài đặt nhanh”**. Cách này dùng được từ Android 13, nhưng một số bản HyperOS không hỗ trợ.
+- **Cách 2 (thủ công):**
+  1. Vuốt từ **góc trên bên phải** xuống để mở Trung tâm điều khiển.
+  2. Bấm biểu tượng **chỉnh sửa** (hình bút chì hoặc ô vuông).
+  3. Tìm ô **“FloatTile + số ô”**, ví dụ ô số 2 là “FloatTile 2”.
+  4. Nhấn giữ ô và kéo vào vùng các ô đang dùng, rồi bấm **Xong**.
+- Sau khi thêm, ô tự đổi sang tên bạn đặt. Trong lưới của FloatTile, ô ghi “đã thêm” hoặc “chưa thêm”.
+
+Bấm ô để mở ứng dụng dạng nổi. **Nhấn giữ** ô để mở FloatTile.
+
+### Cửa sổ bị nhỏ và lệch trên HyperOS
+
+HyperOS tự thu mọi cửa sổ nổi còn khoảng 70% và giữ nguyên góc trên-trái, nên cửa sổ trông nhỏ hơn và lệch sang trái. FloatTile bù lại bằng cách gửi cho hệ thống một khung lớn hơn đúng tỉ lệ đó. Sau khi HyperOS thu lại, cửa sổ sẽ đúng kích thước bạn chọn và nằm giữa.
+
+Thanh trượt **“HyperOS thu cửa sổ còn …%”** trong màn hình sửa ô dùng chung cho mọi ô, mặc định 70% trên máy Xiaomi. Nếu cửa sổ vẫn nhỏ hơn hình xem trước thì giảm số này, nếu to hơn thì tăng lên, rồi bấm **Mở thử** để xem. Đặt 100% để tắt bù.
+
+> Cửa sổ do FloatTile mở **không có thanh kéo của HyperOS**, nên không kéo đi hay đổi cỡ bằng tay được. Muốn có đủ chức năng (kéo, đổi cỡ, thu thành bong bóng), hãy mở bằng cửa sổ nổi có sẵn của HyperOS: từ **Đa nhiệm** (nhấn giữ thẻ ứng dụng) hoặc từ **Thanh bên**.
 
 ## 4. Lần chạy đầu tiên
 
-1. Mở FloatTile và xem thẻ **Ứng dụng đích**. Thẻ này phải hiện Claude kèm tên gói (tên định danh của ứng dụng, ví dụ `com.anthropic.claude`). Nếu không thấy, bấm **Chọn ứng dụng khác**. Danh sách ghi tên gói của mọi ứng dụng, và ứng dụng có chữ “claude” được đưa lên đầu.
+1. Mở FloatTile. Lưới **Các ô của bạn** có sẵn ô số 1 “Claude nổi”. Bấm vào ô để kiểm tra nó đang mở đúng Claude, kèm tên gói (tên định danh của ứng dụng, ví dụ `com.anthropic.claude`). Danh sách chọn ứng dụng ghi tên gói của mọi ứng dụng, và ứng dụng có chữ “claude” được đưa lên đầu.
 2. Bấm **“Kiểm tra cửa sổ tự do của máy”**. FloatTile sẽ mở một cửa sổ thử nghiệm bằng từng cách, đo xem nó có thật sự nổi không, rồi in kết luận.
 3. Nếu cách (a) không được, làm theo **“Hướng dẫn và cấp quyền Shizuku”** để dùng cách (b).
 
@@ -52,7 +65,7 @@ Tên gói mặc định là `com.anthropic.claude`. Bạn có thể kiểm tra t
 | Bước | Làm gì | Ghi chú |
 |---|---|---|
 | Ô cài đặt nhanh | `TileService`. Trên Android 14 trở lên dùng `startActivityAndCollapse(PendingIntent)` | Ô này mở một màn hình trong suốt của FloatTile (màn hình trung chuyển), màn hình đó mới mở Claude |
-| Khung cửa sổ | `ActivityOptions.setLaunchBounds(Rect)`: 80% chiều rộng × 60% chiều cao, căn giữa | Chỉnh được trong cài đặt |
+| Khung cửa sổ | `ActivityOptions.setLaunchBounds(Rect)`: mặc định 80% chiều rộng × 60% chiều cao, căn giữa | Chỉnh riêng cho từng ô. Trên HyperOS, khung được phóng to để bù việc hệ thống tự thu cửa sổ |
 | Cờ | `FLAG_ACTIVITY_NEW_TASK \| FLAG_ACTIVITY_MULTIPLE_TASK` | |
 | Cách (a) | Gọi hàm ẩn `setLaunchWindowingMode(5)` bằng reflection (gọi hàm theo tên lúc chạy) | Android 8.x dùng `setLaunchStackId(2)` |
 | Cách (b) | Qua Shizuku: `am start --windowingMode 5 -f 0x18000000 -n <ứng dụng>`, sau đó `am task resize <mã task> <trái> <trên> <phải> <dưới>` | Xem mục 6 về `--bounds` |
@@ -80,7 +93,9 @@ Tên gói mặc định là `com.anthropic.claude`. Bạn có thể kiểm tra t
 
 ```
 FloatTile/app/src/main/java/com/floattile/
-├── FloatTileService.kt     Ô cài đặt nhanh
+├── FloatTileService.kt     10 “chỗ” ô cài đặt nhanh (dùng chung một lớp gốc)
+├── TileStore.kt            Lưu danh sách ô, bật/tắt từng chỗ ô
+├── TileEditActivity.kt     Tạo/sửa một ô: tên, ứng dụng, kích thước, vị trí
 ├── LaunchActivity.kt       Màn hình trung chuyển trong suốt: mở ứng dụng, báo lỗi nếu có
 ├── FreeformLauncher.kt     Lõi: cách (a) reflection, cách (b) Shizuku, chế độ tự động
 ├── FreeformTester.kt       Kiểm tra thực tế bằng cửa sổ thử nghiệm
@@ -88,15 +103,15 @@ FloatTile/app/src/main/java/com/floattile/
 ├── ShizukuHelper.kt        Trạng thái Shizuku, xin quyền, chạy lệnh
 ├── ShellService.kt         Dịch vụ chạy lệnh trong tiến trình có quyền ADB (UserService của Shizuku)
 ├── DumpsysParser.kt        Đọc mã task và chế độ cửa sổ từ dumpsys
-├── WindowBounds.kt         Tính khung cửa sổ
+├── WindowBounds.kt         Tính khung cửa sổ, bù tỉ lệ HyperOS
 ├── TargetApp.kt            Tìm ứng dụng đích, gắn cờ mở
-├── MainActivity.kt         Màn hình cài đặt
+├── MainActivity.kt         Màn hình chính: lưới các ô và cài đặt chung
 ├── AppPickerActivity.kt    Chọn ứng dụng đích
 ├── DiagnosticsActivity.kt  Màn hình kiểm tra cửa sổ tự do
 ├── ShizukuGuideActivity.kt Hướng dẫn và cấp quyền Shizuku
 ├── BoundsPreviewView.kt    Hình xem trước kích thước và vị trí
 ├── FreeformEnv.kt          Đọc tùy chọn hệ thống
-└── Prefs.kt                Lưu cài đặt
+└── Prefs.kt                Lưu cài đặt chung
 ```
 
 ## 8. Tự build trên máy tính (không bắt buộc)

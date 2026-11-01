@@ -39,6 +39,11 @@
         </activity>
 
         <activity
+            android:name=".TileEditActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".AppPickerActivity"
             android:exported="false"
             android:label="@string/title_pick_app" />
@@ -81,14 +86,152 @@
             android:theme="@style/Theme.FloatTile.Probe" />
 
         <!--
-            Dịch vụ ô cài đặt nhanh (TileService).
+            Dịch vụ ô cài đặt nhanh (TileService): khai báo sẵn 10 "chỗ".
             Quyền BIND_QUICK_SETTINGS_TILE đảm bảo chỉ giao diện hệ thống mới gắn được vào dịch vụ này.
+            Chỗ số 1 bật sẵn (giữ ô "Claude nổi" của bản cũ); các chỗ khác tắt sẵn và
+            chỉ được bật khi bạn tạo ô tương ứng trong FloatTile.
         -->
         <service
             android:name=".FloatTileService"
+            android:enabled="true"
             android:exported="true"
             android:icon="@drawable/ic_tile"
-            android:label="@string/tile_label"
+            android:label="@string/tile_slot_1"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+
+        <service
+            android:name=".FloatTileService2"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_tile"
+            android:label="@string/tile_slot_2"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+
+        <service
+            android:name=".FloatTileService3"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_tile"
+            android:label="@string/tile_slot_3"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+
+        <service
+            android:name=".FloatTileService4"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_tile"
+            android:label="@string/tile_slot_4"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+
+        <service
+            android:name=".FloatTileService5"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_tile"
+            android:label="@string/tile_slot_5"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+
+        <service
+            android:name=".FloatTileService6"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_tile"
+            android:label="@string/tile_slot_6"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+
+        <service
+            android:name=".FloatTileService7"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_tile"
+            android:label="@string/tile_slot_7"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+
+        <service
+            android:name=".FloatTileService8"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_tile"
+            android:label="@string/tile_slot_8"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+
+        <service
+            android:name=".FloatTileService9"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_tile"
+            android:label="@string/tile_slot_9"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+
+        <service
+            android:name=".FloatTileService10"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_tile"
+            android:label="@string/tile_slot_10"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />

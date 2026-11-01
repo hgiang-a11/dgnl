@@ -20,53 +20,20 @@ enum class ProbeState { UNTESTED, OK, FAIL }
  * (= một file nhỏ dạng "khóa → giá trị" nằm trong bộ nhớ riêng của ứng dụng).
  */
 object Prefs {
-    const val DEFAULT_PACKAGE = "com.anthropic.claude"
-
-    const val DEFAULT_WIDTH = 80
-    const val DEFAULT_HEIGHT = 60
-    const val DEFAULT_POS = 50   // 50% = chính giữa
-
     private lateinit var sp: SharedPreferences
 
     fun init(context: Context) {
         sp = context.applicationContext.getSharedPreferences("floattile", Context.MODE_PRIVATE)
     }
 
-    // ----- Ứng dụng đích -----
-    var targetPackage: String
-        get() = sp.getString("target_package", DEFAULT_PACKAGE) ?: DEFAULT_PACKAGE
-        set(v) = sp.edit().putString("target_package", v).apply()
-
-    /** Tên màn hình (activity) cụ thể của ứng dụng đích; null = để hệ thống tự chọn màn hình chính. */
-    var targetActivity: String?
-        get() = sp.getString("target_activity", null)
-        set(v) = sp.edit().putString("target_activity", v).apply()
-
-    // ----- Kích thước & vị trí (đơn vị: % màn hình) -----
-    var widthPct: Int
-        get() = sp.getInt("width_pct", DEFAULT_WIDTH)
-        set(v) = sp.edit().putInt("width_pct", v).apply()
-
-    var heightPct: Int
-        get() = sp.getInt("height_pct", DEFAULT_HEIGHT)
-        set(v) = sp.edit().putInt("height_pct", v).apply()
-
-    /** Vị trí tâm cửa sổ theo chiều ngang: 0 = sát trái, 50 = giữa, 100 = sát phải. */
-    var posXPct: Int
-        get() = sp.getInt("pos_x_pct", DEFAULT_POS)
-        set(v) = sp.edit().putInt("pos_x_pct", v).apply()
-
-    /** Vị trí tâm cửa sổ theo chiều dọc: 0 = sát trên, 50 = giữa, 100 = sát dưới. */
-    var posYPct: Int
-        get() = sp.getInt("pos_y_pct", DEFAULT_POS)
-        set(v) = sp.edit().putInt("pos_y_pct", v).apply()
-
-    fun resetBounds() {
-        widthPct = DEFAULT_WIDTH
-        heightPct = DEFAULT_HEIGHT
-        posXPct = DEFAULT_POS
-        posYPct = DEFAULT_POS
-    }
+    /**
+     * HyperOS tự thu nhỏ mọi cửa sổ nổi (thường còn khoảng 70%) và giữ nguyên góc trên-trái.
+     * FloatTile phóng to khung gửi cho hệ thống theo tỉ lệ nghịch để bù lại.
+     * Máy Xiaomi mặc định 70%; máy khác mặc định 100% (= không bù).
+     */
+    var hyperScalePct: Int
+        get() = sp.getInt("hyper_scale_pct", if (FreeformEnv.isXiaomi()) 70 else 100)
+        set(v) = sp.edit().putInt("hyper_scale_pct", v).apply()
 
     // ----- Cách mở -----
     var launchMode: LaunchMode

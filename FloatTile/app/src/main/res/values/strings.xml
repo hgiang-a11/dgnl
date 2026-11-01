@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">FloatTile</string>
-    <string name="tile_label">Claude nổi</string>
     <string name="tile_subtitle_missing">Chưa chọn ứng dụng</string>
 
     <string name="title_pick_app">Chọn ứng dụng đích</string>
@@ -17,10 +16,9 @@
 
     <!-- Thẻ ứng dụng đích -->
     <string name="section_target">Ứng dụng đích</string>
-    <string name="btn_pick_app">Chọn ứng dụng khác</string>
+    <string name="btn_pick_app">Chọn ứng dụng</string>
     <string name="target_missing">Chưa tìm thấy ứng dụng</string>
-    <string name="target_missing_detail">Gói %1$s chưa được cài. Hãy bấm “Chọn ứng dụng khác”.</string>
-    <string name="target_hint">Mặc định là Claude (gói com.anthropic.claude). Danh sách chọn có ghi tên gói của từng ứng dụng để bạn đối chiếu.</string>
+    <string name="target_missing_detail">Gói %1$s chưa được cài.</string>
 
     <!-- Thẻ kích thước -->
     <string name="section_bounds">Kích thước và vị trí cửa sổ</string>
@@ -28,7 +26,9 @@
     <string name="label_height">Chiều cao: %1$d%% màn hình</string>
     <string name="label_pos_x">Vị trí ngang: %1$d%% (50 = giữa)</string>
     <string name="label_pos_y">Vị trí dọc: %1$d%% (50 = giữa)</string>
-    <string name="bounds_format">Khung cửa sổ: %1$s\nMàn hình: %2$d×%3$d px</string>
+    <string name="bounds_format">Cửa sổ hiện ra: %1$s
+Khung gửi cho hệ thống (đã bù): %2$s
+Màn hình: %3$d×%4$d px</string>
     <string name="btn_reset_bounds">Đặt lại mặc định</string>
     <string name="btn_try_now">Mở thử ngay</string>
 
@@ -48,14 +48,10 @@
     <string name="btn_shizuku">Hướng dẫn và cấp quyền Shizuku</string>
 
     <!-- Thẻ thêm ô -->
-    <string name="section_tile">Thêm ô vào bảng cài đặt nhanh</string>
-    <string name="btn_add_tile">Thêm ô ngay</string>
-    <string name="tile_help">Cách thêm thủ công trên HyperOS: vuốt từ góc trên bên phải xuống để mở Trung tâm điều khiển → bấm biểu tượng chỉnh sửa (hình bút chì hoặc ô vuông) → tìm ô “Claude nổi” → nhấn giữ và kéo vào vùng ô đang dùng → Xong.\nNhấn giữ ô sẽ mở lại màn hình này.</string>
-    <string name="add_tile_manual">Máy không hỗ trợ thêm tự động. Hãy thêm thủ công theo hướng dẫn bên dưới nút.</string>
+    <string name="btn_add_tile">Lưu và thêm vào bảng cài đặt nhanh</string>
 
     <!-- Chọn ứng dụng -->
     <string name="search_hint">Tìm theo tên hoặc tên gói</string>
-    <string name="picked_app">Đã chọn %1$s</string>
     <string name="selected_mark">Đang chọn</string>
 
     <!-- Kiểm tra -->
@@ -78,4 +74,48 @@
     <string name="btn_find_claude">Tìm tên gói Claude (pm list packages)</string>
     <string name="btn_test_shell">Thử chạy lệnh (id)</string>
     <string name="running_command">Đang chạy: %1$s…</string>
+
+    <!-- Nhiều ô -->
+    <string name="tile_slot_1">FloatTile 1</string>
+    <string name="tile_slot_2">FloatTile 2</string>
+    <string name="tile_slot_3">FloatTile 3</string>
+    <string name="tile_slot_4">FloatTile 4</string>
+    <string name="tile_slot_5">FloatTile 5</string>
+    <string name="tile_slot_6">FloatTile 6</string>
+    <string name="tile_slot_7">FloatTile 7</string>
+    <string name="tile_slot_8">FloatTile 8</string>
+    <string name="tile_slot_9">FloatTile 9</string>
+    <string name="tile_slot_10">FloatTile 10</string>
+    <string name="tile_unconfigured">Ô %1$d (chưa cài)</string>
+    <string name="tile_subtitle_setup">Bấm để cài đặt</string>
+    <string name="section_tiles">Các ô của bạn</string>
+    <string name="tiles_count">%1$d/%2$d ô</string>
+    <string name="tiles_empty">Chưa có ô nào. Bấm “Thêm ô” ở dưới để tạo.</string>
+    <string name="tiles_help">Mỗi ô ở đây là một ô riêng trên bảng cài đặt nhanh. Bấm vào ô để đổi tên, đổi ứng dụng, kích thước hoặc xóa.\nThêm ô thủ công trên HyperOS: vuốt từ góc trên bên phải xuống → bấm biểu tượng chỉnh sửa → tìm ô “FloatTile + số ô” → kéo vào → Xong. Sau khi thêm, ô tự đổi sang tên bạn đặt. Nhấn giữ ô để mở FloatTile.</string>
+    <string name="tile_info_added">(Ô %1$d · đã thêm)</string>
+    <string name="tile_info_not_added">(Ô %1$d · chưa thêm)</string>
+    <string name="tile_info_missing">(Ô %1$d · thiếu ứng dụng)</string>
+    <string name="btn_new_tile">Thêm ô</string>
+    <string name="no_free_slot">Đã dùng hết 10 ô. Hãy xóa bớt một ô để tạo ô mới.</string>
+    <string name="title_new_tile">Tạo ô số %1$d</string>
+    <string name="title_edit_tile">Sửa ô số %1$d</string>
+    <string name="hint_tile_name">Tên ô (hiện trên bảng cài đặt nhanh)</string>
+    <string name="app_not_chosen">Chưa chọn ứng dụng</string>
+    <string name="label_scale">HyperOS thu cửa sổ còn: %1$d%% (chung cho mọi ô)</string>
+    <string name="scale_help" formatted="false">HyperOS tự thu nhỏ mọi cửa sổ nổi rồi neo ở góc trên-trái, làm cửa sổ bị nhỏ và lệch. FloatTile phóng to khung gửi đi theo đúng tỉ lệ này để bù lại. Nếu cửa sổ vẫn nhỏ hơn hình xem trước thì giảm số này; nếu to hơn thì tăng lên; đặt 100% để tắt bù. Chỉnh xong bấm “Mở thử”.</string>
+    <string name="slot_hint">Đây là ô số %1$d. Khi thêm thủ công, tìm ô tên “FloatTile %1$d”; sau khi thêm, ô sẽ tự đổi sang tên bạn đặt.</string>
+    <string name="btn_save">Lưu</string>
+    <string name="btn_discard">Bỏ thay đổi</string>
+    <string name="btn_cancel">Hủy</string>
+    <string name="btn_delete">Xóa</string>
+    <string name="btn_delete_tile">Xóa ô này</string>
+    <string name="need_app">Hãy chọn ứng dụng cho ô trước.</string>
+    <string name="saved_tile">Đã lưu “%1$s” (ô số %2$d)</string>
+    <string name="deleted_tile">Đã xóa ô số %1$d</string>
+    <string name="delete_title">Xóa ô số %1$d?</string>
+    <string name="delete_message">Ô sẽ biến mất khỏi bảng cài đặt nhanh.</string>
+    <string name="unsaved_title">Lưu thay đổi?</string>
+    <string name="unsaved_message">Bạn có thay đổi chưa lưu.</string>
+    <string name="manual_add_title">Thêm ô thủ công</string>
+    <string name="manual_add_message">Máy không cho thêm tự động. Hãy làm như sau:\n\n1. Vuốt từ góc trên bên phải xuống để mở Trung tâm điều khiển.\n2. Bấm biểu tượng chỉnh sửa.\n3. Tìm ô “FloatTile %1$d”, nhấn giữ và kéo vào vùng ô đang dùng.\n4. Bấm Xong. Ô sẽ tự đổi sang tên bạn đặt.</string>
 </resources>

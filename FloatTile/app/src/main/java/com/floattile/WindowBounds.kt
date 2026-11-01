@@ -44,9 +44,32 @@ object WindowBounds {
         return Rect(left, top, left + w, top + h)
     }
 
-    /** Khung cửa sổ theo cài đặt người dùng đã lưu. */
-    fun fromPrefs(context: Context): Rect =
-        compute(screen(context), Prefs.widthPct, Prefs.heightPct, Prefs.posXPct, Prefs.posYPct)
+    /** Khung người dùng muốn THẤY trên màn hình (theo cài đặt của ô). */
+    fun visualRect(screen: Screen, cfg: TileConfig): Rect =
+        compute(screen, cfg.widthPct, cfg.heightPct, cfg.posXPct, cfg.posYPct)
+
+    /**
+     * Khung gửi cho hệ thống.
+     * HyperOS thu cửa sổ nổi còn [scalePct]% và giữ nguyên góc trên-trái, nên:
+     *  - góc trên-trái giữ nguyên như khung mong muốn;
+     *  - chiều rộng/cao chia cho hệ số thu nhỏ (ví dụ 576 / 0,7 ≈ 823).
+     * Sau khi HyperOS thu lại, cửa sổ hiện ra đúng bằng khung mong muốn.
+     * Khung gửi đi có thể vượt ra ngoài mép màn hình, đó là chủ ý.
+     */
+    fun systemRect(visual: Rect, scalePct: Int): Rect {
+        if (scalePct >= 100 || scalePct <= 0) return Rect(visual)
+        val s = scalePct / 100f
+        return Rect(
+            visual.left,
+            visual.top,
+            visual.left + (visual.width() / s).roundToInt(),
+            visual.top + (visual.height() / s).roundToInt()
+        )
+    }
+
+    /** Khung gửi cho hệ thống của một ô (đã bù tỉ lệ HyperOS). */
+    fun forTile(context: Context, cfg: TileConfig): Rect =
+        systemRect(visualRect(screen(context), cfg), Prefs.hyperScalePct)
 
     fun describe(r: Rect): String =
         "${r.width()}×${r.height()} px, góc trên-trái (${r.left}, ${r.top})"

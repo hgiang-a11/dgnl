@@ -37,6 +37,16 @@ data class AppEntry(
  */
 class AppPickerActivity : AppCompatActivity() {
 
+    companion object {
+        // Kết quả trả về cho màn hình sửa ô
+        const val EXTRA_PACKAGE = "com.floattile.PICK_PACKAGE"
+        const val EXTRA_ACTIVITY = "com.floattile.PICK_ACTIVITY"
+        const val EXTRA_LABEL = "com.floattile.PICK_LABEL"
+        // Ứng dụng đang chọn (để đánh dấu trong danh sách)
+        const val EXTRA_CURRENT_PACKAGE = "com.floattile.CURRENT_PACKAGE"
+        const val EXTRA_CURRENT_ACTIVITY = "com.floattile.CURRENT_ACTIVITY"
+    }
+
     private val adapter = AppAdapter { choose(it) }
     private var allApps: List<AppEntry> = emptyList()
 
@@ -87,13 +97,21 @@ class AppPickerActivity : AppCompatActivity() {
         val filtered = if (q.isEmpty()) allApps else allApps.filter {
             it.label.contains(q, true) || it.packageName.contains(q, true)
         }
-        adapter.submit(filtered, Prefs.targetPackage, Prefs.targetActivity)
+        adapter.submit(
+            filtered,
+            intent.getStringExtra(EXTRA_CURRENT_PACKAGE),
+            intent.getStringExtra(EXTRA_CURRENT_ACTIVITY)
+        )
     }
 
     private fun choose(entry: AppEntry) {
-        Prefs.targetPackage = entry.packageName
-        Prefs.targetActivity = entry.activityName
-        toast(getString(R.string.picked_app, entry.label))
+        setResult(
+            RESULT_OK,
+            Intent()
+                .putExtra(EXTRA_PACKAGE, entry.packageName)
+                .putExtra(EXTRA_ACTIVITY, entry.activityName)
+                .putExtra(EXTRA_LABEL, entry.label)
+        )
         finish()
     }
 
