@@ -113,7 +113,10 @@ object FreeformLauncher {
         // Bước 2: chạy lệnh am start.
         val start = ShizukuHelper.exec(amStartCommand(target.component.flattenToShortString()))
         if (!start.ok) {
-            return ShizukuLaunchResult(false, null, false, "Lệnh am start báo lỗi:\n${start.output.trim()}")
+            return ShizukuLaunchResult(
+                false, null, false,
+                "Lệnh am start báo lỗi:\n${start.output.trim()}${FreeformEnv.permissionHint(start.output)}"
+            )
         }
         val broughtToFront = start.output.contains("brought to the front")
 
@@ -145,7 +148,8 @@ object FreeformLauncher {
         } else {
             ShizukuLaunchResult(
                 true, true, false,
-                "Đã mở dạng cửa sổ tự do nhưng không đặt được kích thước: ${resize.output.trim().take(200)}"
+                "Đã mở dạng cửa sổ tự do nhưng không đặt được kích thước: ${resize.output.trim().take(200)}" +
+                    FreeformEnv.permissionHint(resize.output)
             )
         }
     }

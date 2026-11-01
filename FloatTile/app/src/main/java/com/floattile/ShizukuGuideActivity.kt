@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -36,6 +37,10 @@ class ShizukuGuideActivity : AppCompatActivity() {
         statusText = findViewById(R.id.shizuku_state)
         outputText = findViewById(R.id.shizuku_output)
         btnPermission = findViewById(R.id.btn_permission)
+
+        // Máy Xiaomi: hiện khung hướng dẫn gỡ giới hạn quyền ADB.
+        findViewById<View>(R.id.xiaomi_limit_card).visibility =
+            if (FreeformEnv.isXiaomi()) View.VISIBLE else View.GONE
 
         btnPermission.setOnClickListener { askPermission() }
         findViewById<Button>(R.id.btn_open_shizuku).setOnClickListener { openShizuku() }

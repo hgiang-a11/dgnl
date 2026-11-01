@@ -68,7 +68,13 @@ Tên gói mặc định là `com.anthropic.claude`. Bạn có thể kiểm tra t
 4. **Tùy chọn “Bật cửa sổ dạng tự do” chỉ có hiệu lực sau khi khởi động lại máy.** Hãy khởi động lại sau khi bật. Bạn cũng nên bật **“Buộc các hoạt động có thể thay đổi kích thước”**, vì nếu Claude không cho đổi kích thước, hệ thống sẽ mở nó toàn màn hình. Nếu Shizuku đã có quyền, màn hình kiểm tra có nút bật cả hai tùy chọn này giúp bạn.
 5. **Claude đang mở sẵn.** Nếu Claude đã mở toàn màn hình, hệ thống có thể chỉ đưa cửa sổ cũ lên trước. Hãy đóng Claude trong Đa nhiệm rồi bấm ô lại.
 6. **Shizuku tắt sau khi khởi động lại máy** (nếu máy không root). Mở Shizuku và bấm Khởi động lại.
-7. **Nếu mọi cách đều không được:** dùng cửa sổ nổi có sẵn của HyperOS. Mở Đa nhiệm, nhấn giữ thẻ Claude rồi chọn biểu tượng cửa sổ nổi, hoặc dùng Thanh bên (Sidebar) của HyperOS.
+7. **Shizuku báo “quyền adb bị giới hạn” (máy Xiaomi/HyperOS).** Đây là cảnh báo của Shizuku: Xiaomi cắt bớt quyền của ADB cho tới khi bạn bật một tùy chọn riêng. Cách gỡ:
+   1. Vào **Tùy chọn nhà phát triển**, bật **“Gỡ lỗi USB (Cài đặt bảo mật)”**. Thường cần đăng nhập Tài khoản Xiaomi, lắp SIM và bật dữ liệu di động. Chờ hộp cảnh báo đếm ngược hết giờ rồi bấm Đồng ý.
+   2. Mở Shizuku, bấm **Dừng** rồi **Khởi động lại**.
+   3. Quay lại FloatTile và bấm **Cấp quyền Shizuku**.
+
+   Nếu chưa gỡ giới hạn, những lệnh cần quyền cao như nút “Bật cửa sổ tự do bằng Shizuku” sẽ bị từ chối. Khi đó FloatTile sẽ hiện lời nhắc này.
+8. **Nếu mọi cách đều không được:** dùng cửa sổ nổi có sẵn của HyperOS. Mở Đa nhiệm, nhấn giữ thẻ Claude rồi chọn biểu tượng cửa sổ nổi, hoặc dùng Thanh bên (Sidebar) của HyperOS.
 
 ## 7. Cấu trúc mã nguồn
 

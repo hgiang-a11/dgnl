@@ -62,7 +62,10 @@ object FreeformTester {
         val res = ShizukuHelper.exec(cmd)
         if (!res.ok) {
             ProbeBus.cancel(token)
-            return Outcome(ProbeState.FAIL, "Lệnh am start báo lỗi: ${res.output.trim().take(300)}")
+            return Outcome(
+                ProbeState.FAIL,
+                "Lệnh am start báo lỗi: ${res.output.trim().take(300)}${FreeformEnv.permissionHint(res.output)}"
+            )
         }
         val result = withTimeoutOrNull(timeoutMs) { deferred.await() }
         if (result == null) {

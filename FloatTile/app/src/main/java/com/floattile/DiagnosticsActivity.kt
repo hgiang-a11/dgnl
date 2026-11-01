@@ -184,7 +184,12 @@ class DiagnosticsActivity : AppCompatActivity() {
                 toast("Đã bật. Hãy KHỞI ĐỘNG LẠI máy rồi kiểm tra lại.", long = true)
                 btnEnable.visibility = View.GONE
             } else {
-                toast("Không bật được: ${r.output.trim().take(200)}", long = true)
+                // Ghi lý do vào báo cáo (Toast quá ngắn để đọc hết).
+                line("")
+                line("❌ Không bật được tùy chọn bằng Shizuku: ${r.output.trim().take(300)}")
+                val hint = FreeformEnv.permissionHint(r.output).trim()
+                if (hint.isNotEmpty()) line("   👉 $hint")
+                toast("Không bật được, xem lý do ở cuối báo cáo.", long = true)
             }
         }
     }
