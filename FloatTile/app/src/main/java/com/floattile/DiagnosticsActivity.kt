@@ -116,25 +116,46 @@ class DiagnosticsActivity : AppCompatActivity() {
             line("   ❌ $reflectionError")
         }
 
-        // Bước 4: mở cửa sổ thử bằng cách (a).
+        // Bước 4: mở cửa sổ thử bằng cách (a) — chỉ khi gọi được hàm ẩn.
         val bounds = WindowBounds.fromPrefs(ctx)
-        line("   ⏳ Mở cửa sổ thử nghiệm bằng cách (a)…")
-        val a = FreeformTester.probeReflection(ctx, bounds)
-        line("   ${FreeformLauncher.stateText(a.state)}: ${a.note}")
+        val a = if (reflectionError == null) {
+            line("   ⏳ Mở cửa sổ thử nghiệm bằng cách (a)…")
+            FreeformTester.probeReflection(ctx, bounds).also {
+                line("   ${FreeformLauncher.stateText(it.state)}: ${it.note}")
+            }
+        } else {
+            line("   ⏭ Bỏ qua mở cửa sổ thử vì hệ điều hành chặn hàm ẩn.")
+            FreeformTester.Outcome(ProbeState.FAIL, reflectionError)
+        }
 
         // Bước 5: Shizuku.
         line("④ Cách (b): am start --windowingMode 5 qua Shizuku")
         ShizukuHelper.awaitBinder()
         val status = ShizukuHelper.status(ctx)
         line("   ${ShizukuHelper.describe(status)}")
-        val b = if (status == ShizukuHelper.Status.READY) {
+        line("   • Phiên bản: ${ShizukuHelper.versionInfo(ctx)}")
+        var shellWorks = false
+        if (status == ShizukuHelper.Status.READY) {
+            // Thử một lệnh vô hại trước để biết Shizuku có chạy lệnh được không.
+            val idResult = ShizukuHelper.exec("id")
+            shellWorks = idResult.exitCode == 0
+            if (shellWorks) {
+                line("   ✅ Chạy lệnh được (đường ${ShizukuHelper.lastExecPath}): ${idResult.output.trim().take(120)}")
+            } else {
+                line("   ❌ Không chạy được lệnh qua Shizuku:")
+                line(idResult.output.trim().prependIndent("      "))
+            }
+        }
+        val b = if (status == ShizukuHelper.Status.READY && shellWorks) {
             line("   ⏳ Mở cửa sổ thử nghiệm bằng Shizuku…")
             FreeformTester.probeShizuku(ctx)
+        } else if (status == ShizukuHelper.Status.READY) {
+            FreeformTester.Outcome(ProbeState.FAIL, "Chưa thử được vì Shizuku không chạy được lệnh (xem lỗi ở trên).")
         } else {
             FreeformTester.Outcome(ProbeState.UNTESTED, "Chưa thử vì Shizuku chưa sẵn sàng.")
         }
         line("   ${FreeformLauncher.stateText(b.state)}: ${b.note}")
-        if (status == ShizukuHelper.Status.READY) {
+        if (shellWorks) {
             val pkgs = ShizukuHelper.exec("pm list packages | grep -i claude")
             line("   • Kết quả lệnh \"pm list packages | grep -i claude\":")
             line("     " + pkgs.output.trim().ifEmpty { "(không có gói nào chứa chữ claude)" }.replace("\n", "\n     "))
@@ -166,7 +187,7 @@ class DiagnosticsActivity : AppCompatActivity() {
                 line(FreeformLauncher.buildFailureReport(ctx).prependIndent("   "))
             }
         }
-        if (status == ShizukuHelper.Status.READY && !(freeform.isOn && resizable.isOn)) {
+        if (shellWorks && !(freeform.isOn && resizable.isOn)) {
             btnEnable.visibility = View.VISIBLE
         }
         line("")

@@ -120,7 +120,8 @@ class ShizukuGuideActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val r = ShizukuHelper.exec(command)
             val out = r.output.trim().ifEmpty { emptyText }
-            outputText.text = "$ $command\n$out"
+            val path = ShizukuHelper.lastExecPath?.let { "\n(đường chạy lệnh: $it)" } ?: ""
+            outputText.text = "$ $command\n$out$path"
         }
     }
 

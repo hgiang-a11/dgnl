@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
+import android.os.ParcelFileDescriptor
+import moe.shizuku.server.IShizukuService
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -153,6 +155,16 @@ object ShizukuHelper {
         }
     }
 
+    /** Lý do lần gần nhất không dựng được tiến trình phụ (để hiện trong báo cáo). */
+    @Volatile
+    var lastServiceError: String? = null
+        private set
+
+    /** Đường chạy lệnh của lần gần nhất: "trực tiếp" hoặc "tiến trình phụ". */
+    @Volatile
+    var lastExecPath: String? = null
+        private set
+
     private suspend fun obtainService(timeoutMs: Long): IShellService? = mutex.withLock {
         val current = service
         if (current != null && current.asBinder().pingBinder()) return@withLock current
@@ -161,16 +173,42 @@ object ShizukuHelper {
         try {
             withContext(Dispatchers.Main) { Shizuku.bindUserService(serviceArgs, connection) }
         } catch (t: Throwable) {
+            lastServiceError = "Shizuku từ chối dựng tiến trình phụ: $t"
             return@withLock null
         }
-        withTimeoutOrNull(timeoutMs) { waiter.await() }
+        val s = withTimeoutOrNull(timeoutMs) { waiter.await() }
+        if (s == null) {
+            lastServiceError = "Chờ ${timeoutMs / 1000} giây mà Shizuku không dựng xong tiến trình phụ."
+        }
+        s
     }
 
-    /** Chạy [command] với quyền ADB. Cần Shizuku ở trạng thái READY. */
-    suspend fun exec(command: String, connectTimeoutMs: Long = 8000): ShellResult {
-        if (!isRunning()) return ShellResult(-1, "Shizuku chưa chạy")
-        val s = obtainService(connectTimeoutMs)
-            ?: return ShellResult(-1, "Không kết nối được dịch vụ chạy lệnh của Shizuku")
+    /**
+     * Đường 1 – chạy trực tiếp: nhờ chính dịch vụ Shizuku (đang chạy với quyền ADB) tạo tiến trình
+     * "sh -c <lệnh>", qua hàm newProcess trong giao diện công khai IShizukuService của Shizuku.
+     * Không cần dựng thêm tiến trình phụ nên ít chỗ hỏng hơn.
+     */
+    private fun execDirect(command: String): ShellResult {
+        val binder = Shizuku.getBinder() ?: throw IllegalStateException("chưa nhận được kết nối từ Shizuku")
+        val shizuku = IShizukuService.Stub.asInterface(binder)
+        // "exec 2>&1": gộp thông báo lỗi vào cùng luồng kết quả cho dễ đọc.
+        val remote = shizuku.newProcess(arrayOf("sh", "-c", "exec 2>&1; $command"), null, null)
+            ?: throw IllegalStateException("Shizuku không tạo được tiến trình")
+        try {
+            // Đóng đầu vào: lệnh không cần nhập gì, tránh bị treo chờ dữ liệu.
+            runCatching { remote.outputStream?.close() }
+            val output = ParcelFileDescriptor.AutoCloseInputStream(remote.inputStream)
+                .bufferedReader().use { it.readText() }
+            val code = remote.waitFor()
+            return ShellResult(code, output)
+        } finally {
+            runCatching { remote.destroy() }
+        }
+    }
+
+    /** Đường 2 – tiến trình phụ (UserService). Trả về null nếu không kết nối được. */
+    private suspend fun execViaService(command: String, connectTimeoutMs: Long): ShellResult? {
+        val s = obtainService(connectTimeoutMs) ?: return null
         return withContext(Dispatchers.IO) {
             try {
                 val raw = s.exec(command) ?: ""
@@ -182,8 +220,51 @@ object ShizukuHelper {
                 }
             } catch (t: Throwable) {
                 service = null
-                ShellResult(-1, t.toString())
+                lastServiceError = "Tiến trình phụ lỗi khi chạy lệnh: $t"
+                null
             }
         }
+    }
+
+    /**
+     * Chạy [command] với quyền ADB. Cần Shizuku ở trạng thái READY.
+     * Thử đường 1 (trực tiếp) trước, hỏng thì thử đường 2 (tiến trình phụ).
+     */
+    suspend fun exec(command: String, connectTimeoutMs: Long = 8000): ShellResult {
+        if (!isRunning()) return ShellResult(-1, "Shizuku chưa chạy")
+
+        val direct = withContext(Dispatchers.IO) { runCatching { execDirect(command) } }
+        direct.getOrNull()?.let {
+            lastExecPath = "trực tiếp"
+            return it
+        }
+        val directError = direct.exceptionOrNull()?.toString() ?: "?"
+
+        execViaService(command, connectTimeoutMs)?.let {
+            lastExecPath = "tiến trình phụ"
+            return it
+        }
+        lastExecPath = null
+        return ShellResult(
+            -1,
+            "Không chạy được lệnh qua Shizuku.\n" +
+                "• Đường trực tiếp: $directError\n" +
+                "• Đường tiến trình phụ: ${lastServiceError ?: "?"}"
+        )
+    }
+
+    /** Phiên bản Shizuku (ứng dụng và dịch vụ) để ghi vào báo cáo. */
+    fun versionInfo(context: Context): String {
+        val app = try {
+            context.packageManager.getPackageInfo(PACKAGE, 0).versionName ?: "?"
+        } catch (e: PackageManager.NameNotFoundException) {
+            "chưa cài"
+        }
+        val server = try {
+            Shizuku.getVersion().toString()
+        } catch (t: Throwable) {
+            "?"
+        }
+        return "ứng dụng Shizuku $app, dịch vụ API $server"
     }
 }

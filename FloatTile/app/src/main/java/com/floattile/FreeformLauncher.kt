@@ -238,12 +238,26 @@ object FreeformLauncher {
         sb.appendLine("   ${ShizukuHelper.describe(ShizukuHelper.status(context))}")
         sb.appendLine()
         sb.appendLine("Gợi ý:")
-        sb.appendLine("1. Kiểm tra lại \"Bật cửa sổ dạng tự do\" trong Tùy chọn nhà phát triển, rồi KHỞI ĐỘNG LẠI máy (tùy chọn này chỉ có hiệu lực sau khi khởi động lại).")
-        sb.appendLine("2. Bật thêm \"Buộc các hoạt động có thể thay đổi kích thước\".")
-        sb.appendLine("3. Cài Shizuku và cấp quyền cho FloatTile (xem hướng dẫn trong ứng dụng).")
-        if (FreeformEnv.isXiaomi()) {
-            sb.appendLine("4. Dùng cửa sổ nổi có sẵn của HyperOS: mở Đa nhiệm → nhấn giữ thẻ ứng dụng → biểu tượng cửa sổ nổi.")
+        val tips = mutableListOf<String>()
+        val freeform = FreeformEnv.readGlobal(context, FreeformEnv.KEY_FREEFORM)
+        val resizable = FreeformEnv.readGlobal(context, FreeformEnv.KEY_FORCE_RESIZABLE)
+        if (freeform.readable && !freeform.isOn) {
+            tips += "Bật \"Bật cửa sổ dạng tự do\" trong Tùy chọn nhà phát triển, rồi KHỞI ĐỘNG LẠI máy."
+        } else {
+            tips += "Nếu vừa bật \"Bật cửa sổ dạng tự do\", hãy KHỞI ĐỘNG LẠI máy (tùy chọn chỉ có hiệu lực sau khi khởi động lại)."
         }
+        if (!resizable.isOn) {
+            tips += "Bật \"Buộc các hoạt động có thể thay đổi kích thước\" trong Tùy chọn nhà phát triển, rồi khởi động lại máy."
+        }
+        if (ShizukuHelper.status(context) != ShizukuHelper.Status.READY) {
+            tips += "Cài Shizuku và cấp quyền cho FloatTile (xem hướng dẫn trong ứng dụng)."
+        } else if (Prefs.probeShizuku == ProbeState.FAIL && FreeformEnv.isXiaomi()) {
+            tips += FreeformEnv.XIAOMI_ADB_HINT
+        }
+        if (FreeformEnv.isXiaomi()) {
+            tips += "Dùng cửa sổ nổi có sẵn của HyperOS: mở Đa nhiệm → nhấn giữ thẻ ứng dụng → biểu tượng cửa sổ nổi."
+        }
+        tips.forEachIndexed { i, tip -> sb.appendLine("${i + 1}. $tip") }
         return sb.toString().trim()
     }
 
