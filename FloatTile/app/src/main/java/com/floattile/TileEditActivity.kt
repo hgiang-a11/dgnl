@@ -112,6 +112,9 @@ class TileEditActivity : AppCompatActivity() {
         loading = false
 
         findViewById<TextView>(R.id.slot_hint).text = getString(R.string.slot_hint, slot)
+        // Đang để HyperOS tự quản lý thì các thanh trượt kích thước tạm thời không có tác dụng.
+        findViewById<TextView>(R.id.managed_note).visibility =
+            if (Prefs.hyperManaged) View.VISIBLE else View.GONE
         findViewById<Button>(R.id.btn_delete).visibility = if (isNew) View.GONE else View.VISIBLE
 
         setupListeners()
@@ -247,14 +250,14 @@ class TileEditActivity : AppCompatActivity() {
         labelScale.text = getString(R.string.label_scale, scale)
 
         val screen = WindowBounds.screen(this)
-        val visual = WindowBounds.compute(screen, draftW, draftH, draftX, draftY)
-        val system = WindowBounds.systemRect(visual, scale)
+        val draft = TileConfig(slot, "", "", null, draftW, draftH, draftX, draftY)
+        val plan = WindowBounds.plan(screen, draft, scale)
         boundsText.text = getString(
             R.string.bounds_format,
-            WindowBounds.describe(visual), WindowBounds.describe(system), screen.width, screen.height
+            WindowBounds.describe(plan.visual), WindowBounds.describe(plan.system), screen.width, screen.height
         )
         val label = nameInput.text?.toString()?.trim().orEmpty().ifEmpty { appName.text.toString() }
-        preview.update(screen, visual, label)
+        preview.update(screen, plan.visual, label)
     }
 
     // ----- Lưu, mở thử, xóa -----

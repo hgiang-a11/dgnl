@@ -102,7 +102,7 @@ Màn hình: %3$d×%4$d px</string>
     <string name="hint_tile_name">Tên ô (hiện trên bảng cài đặt nhanh)</string>
     <string name="app_not_chosen">Chưa chọn ứng dụng</string>
     <string name="label_scale">HyperOS thu cửa sổ còn: %1$d%% (chung cho mọi ô)</string>
-    <string name="scale_help" formatted="false">HyperOS tự thu nhỏ mọi cửa sổ nổi rồi neo ở góc trên-trái, làm cửa sổ bị nhỏ và lệch. FloatTile phóng to khung gửi đi theo đúng tỉ lệ này để bù lại. Nếu cửa sổ vẫn nhỏ hơn hình xem trước thì giảm số này; nếu to hơn thì tăng lên; đặt 100% để tắt bù. Chỉnh xong bấm “Mở thử”.</string>
+    <string name="scale_help" formatted="false">HyperOS tự thu nhỏ mọi cửa sổ nổi rồi neo ở góc trên-trái. FloatTile phóng to khung gửi đi theo tỉ lệ này để bù lại, nhưng khung gửi đi không được vượt màn hình, nên cửa sổ hiện ra chỉ to tối đa khoảng bằng tỉ lệ này. Nếu cửa sổ thật nhỏ hơn hình xem trước thì giảm số này, nếu to hơn thì tăng lên; đặt 100% để tắt bù. Chỉnh xong bấm “Mở thử”.</string>
     <string name="slot_hint">Đây là ô số %1$d. Khi thêm thủ công, tìm ô tên “FloatTile %1$d”; sau khi thêm, ô sẽ tự đổi sang tên bạn đặt.</string>
     <string name="btn_save">Lưu</string>
     <string name="btn_discard">Bỏ thay đổi</string>
@@ -118,4 +118,7 @@ Màn hình: %3$d×%4$d px</string>
     <string name="unsaved_message">Bạn có thay đổi chưa lưu.</string>
     <string name="manual_add_title">Thêm ô thủ công</string>
     <string name="manual_add_message">Máy không cho thêm tự động. Hãy làm như sau:\n\n1. Vuốt từ góc trên bên phải xuống để mở Trung tâm điều khiển.\n2. Bấm biểu tượng chỉnh sửa.\n3. Tìm ô “FloatTile %1$d”, nhấn giữ và kéo vào vùng ô đang dùng.\n4. Bấm Xong. Ô sẽ tự đổi sang tên bạn đặt.</string>
+    <string name="hyper_managed_label">Để HyperOS tự đặt kích thước và vị trí</string>
+    <string name="hyper_managed_help">Bật: FloatTile chỉ yêu cầu mở dạng cửa sổ nổi, không tự đổi kích thước sau khi mở, để HyperOS giữ thanh kéo của nó (di chuyển, đổi cỡ bằng tay). Tắt: FloatTile đặt kích thước và vị trí theo từng ô, nhưng trên HyperOS cửa sổ có thể mất thanh kéo.</string>
+    <string name="managed_note">Đang bật “Để HyperOS tự đặt kích thước và vị trí” ở màn hình chính, nên kích thước và vị trí dưới đây tạm thời không được dùng.</string>
 </resources>

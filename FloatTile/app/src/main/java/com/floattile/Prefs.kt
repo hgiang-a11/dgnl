@@ -35,6 +35,15 @@ object Prefs {
         get() = sp.getInt("hyper_scale_pct", if (FreeformEnv.isXiaomi()) 70 else 100)
         set(v) = sp.edit().putInt("hyper_scale_pct", v).apply()
 
+    /**
+     * true = chỉ yêu cầu mở dạng cửa sổ nổi, KHÔNG tự đổi kích thước/vị trí sau khi mở.
+     * Trên HyperOS, lệnh đổi kích thước từ bên ngoài có thể làm hệ thống "mất dấu" cửa sổ
+     * (mất thanh kéo, lệch tỉ lệ), nên máy Xiaomi mặc định bật.
+     */
+    var hyperManaged: Boolean
+        get() = sp.getBoolean("hyper_managed", FreeformEnv.isXiaomi())
+        set(v) = sp.edit().putBoolean("hyper_managed", v).apply()
+
     // ----- Cách mở -----
     var launchMode: LaunchMode
         get() = runCatching { LaunchMode.valueOf(sp.getString("launch_mode", null) ?: "AUTO") }

@@ -48,28 +48,35 @@ object WindowBounds {
     fun visualRect(screen: Screen, cfg: TileConfig): Rect =
         compute(screen, cfg.widthPct, cfg.heightPct, cfg.posXPct, cfg.posYPct)
 
+    /** Kết quả tính: [visual] = cửa sổ ước tính sẽ hiện ra, [system] = khung gửi cho hệ thống. */
+    data class Plan(val visual: Rect, val system: Rect)
+
     /**
-     * Khung gửi cho hệ thống.
-     * HyperOS thu cửa sổ nổi còn [scalePct]% và giữ nguyên góc trên-trái, nên:
-     *  - góc trên-trái giữ nguyên như khung mong muốn;
-     *  - chiều rộng/cao chia cho hệ số thu nhỏ (ví dụ 576 / 0,7 ≈ 823).
-     * Sau khi HyperOS thu lại, cửa sổ hiện ra đúng bằng khung mong muốn.
-     * Khung gửi đi có thể vượt ra ngoài mép màn hình, đó là chủ ý.
+     * Tính khung gửi cho hệ thống khi HyperOS thu cửa sổ nổi còn [scalePct]% và neo góc trên-trái.
+     *  Bước 1: kích thước gửi đi = kích thước muốn thấy ÷ hệ số thu, nhưng KHÔNG vượt màn hình
+     *          (khung vượt màn hình làm nội dung ứng dụng bị đẩy ra ngoài cửa sổ).
+     *  Bước 2: kích thước sẽ thấy = kích thước gửi đi × hệ số thu.
+     *  Bước 3: đặt góc trên-trái sao cho tâm cửa sổ đúng chỗ mong muốn,
+     *          rồi kéo vào trong nếu khung gửi đi bị tràn khỏi màn hình.
      */
-    fun systemRect(visual: Rect, scalePct: Int): Rect {
-        if (scalePct >= 100 || scalePct <= 0) return Rect(visual)
-        val s = scalePct / 100f
-        return Rect(
-            visual.left,
-            visual.top,
-            visual.left + (visual.width() / s).roundToInt(),
-            visual.top + (visual.height() / s).roundToInt()
+    fun plan(screen: Screen, cfg: TileConfig, scalePct: Int): Plan {
+        val desired = visualRect(screen, cfg)
+        val s = if (scalePct in 1..99) scalePct / 100f else 1f
+        val sysW = (desired.width() / s).roundToInt().coerceIn(1, screen.width)
+        val sysH = (desired.height() / s).roundToInt().coerceIn(1, screen.height)
+        val visW = (sysW * s).roundToInt()
+        val visH = (sysH * s).roundToInt()
+        val left = (desired.centerX() - visW / 2).coerceIn(0, screen.width - sysW)
+        val top = (desired.centerY() - visH / 2).coerceIn(0, screen.height - sysH)
+        return Plan(
+            visual = Rect(left, top, left + visW, top + visH),
+            system = Rect(left, top, left + sysW, top + sysH)
         )
     }
 
-    /** Khung gửi cho hệ thống của một ô (đã bù tỉ lệ HyperOS). */
+    /** Khung gửi cho hệ thống của một ô (đã bù tỉ lệ HyperOS, luôn nằm trong màn hình). */
     fun forTile(context: Context, cfg: TileConfig): Rect =
-        systemRect(visualRect(screen(context), cfg), Prefs.hyperScalePct)
+        plan(screen(context), cfg, Prefs.hyperScalePct).system
 
     fun describe(r: Rect): String =
         "${r.width()}×${r.height()} px, góc trên-trái (${r.left}, ${r.top})"

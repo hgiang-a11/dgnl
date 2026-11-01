@@ -44,9 +44,10 @@ object FreeformLauncher {
      *     Từ Android 9, Google hạn chế ứng dụng gọi API ẩn (chính sách "non-SDK interfaces"):
      *     nếu hàm nằm trong danh sách cấm, hệ thống giả vờ như hàm không tồn tại → ta báo lỗi rõ ràng.
      */
-    fun makeFreeformOptions(bounds: Rect): ActivityOptions {
+    fun makeFreeformOptions(bounds: Rect?): ActivityOptions {
         val options = ActivityOptions.makeBasic()
-        options.setLaunchBounds(bounds)
+        // bounds = null: không yêu cầu khung, để hệ thống tự đặt.
+        if (bounds != null) options.setLaunchBounds(bounds)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 val setter = ActivityOptions::class.java
@@ -80,7 +81,7 @@ object FreeformLauncher {
 
     /** Mở ứng dụng đích bằng cách (a). Ném lỗi nếu không làm được. */
     fun launchWithReflection(activity: Activity, target: TargetInfo, bounds: Rect) {
-        val options = makeFreeformOptions(bounds)
+        val options = makeFreeformOptions(if (Prefs.hyperManaged) null else bounds)
         activity.startActivity(target.launchIntent, options.toBundle())
     }
 
@@ -137,6 +138,11 @@ object FreeformLauncher {
                 " Ứng dụng đang mở sẵn nên hệ thống chỉ đưa cửa sổ cũ lên trước (hãy đóng nó trong Đa nhiệm rồi thử lại)."
             } else ""
             return ShizukuLaunchResult(true, false, false, "Hệ thống mở ở chế độ \"${found.mode}\" thay vì cửa sổ tự do.$why")
+        }
+
+        // Đang để HyperOS tự quản lý → dừng ở đây, không đổi kích thước (giữ thanh kéo của HyperOS).
+        if (Prefs.hyperManaged) {
+            return ShizukuLaunchResult(true, true, true, "Đã mở dạng cửa sổ nổi (task #${found.id}), HyperOS tự đặt kích thước.")
         }
 
         // Bước 4: đặt kích thước & vị trí bằng "am task resize <mã task> <trái> <trên> <phải> <dưới>".

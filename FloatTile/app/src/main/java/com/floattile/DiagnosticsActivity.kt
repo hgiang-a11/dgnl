@@ -174,6 +174,7 @@ class DiagnosticsActivity : AppCompatActivity() {
                 line("   ❌ Ô ${t.slot} “${t.name}”: không tìm thấy gói ${t.packageName}. Hãy sửa ô này.")
             }
         }
+        line("   • Để HyperOS tự đặt kích thước và vị trí: ${if (Prefs.hyperManaged) "bật" else "tắt"}")
         line("   • Bù thu nhỏ HyperOS: ${Prefs.hyperScalePct}%")
         line("   • Khung gửi cho hệ thống (ô “${firstTile.name}”): ${WindowBounds.describe(bounds)}")
 

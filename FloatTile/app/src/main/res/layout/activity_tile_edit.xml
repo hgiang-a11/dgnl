@@ -108,6 +108,16 @@
                     android:text="@string/section_bounds"
                     android:textAppearance="?attr/textAppearanceTitleMedium" />
 
+                <TextView
+                    android:id="@+id/managed_note"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/managed_note"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorError"
+                    android:visibility="gone" />
+
                 <com.floattile.BoundsPreviewView
                     android:id="@+id/preview"
                     android:layout_width="match_parent"

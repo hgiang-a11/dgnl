@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import com.google.android.material.materialswitch.MaterialSwitch
 import java.util.Date
 
 /**
@@ -66,6 +67,9 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.version_format, BuildConfig.VERSION_NAME)
 
         setupModeGroup()
+        val managedSwitch = findViewById<MaterialSwitch>(R.id.switch_hyper_managed)
+        managedSwitch.isChecked = Prefs.hyperManaged
+        managedSwitch.setOnCheckedChangeListener { _, checked -> Prefs.hyperManaged = checked }
         autoDetectClaude()
     }
 

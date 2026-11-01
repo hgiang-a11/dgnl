@@ -124,6 +124,19 @@
                             android:text="@string/mode_normal" />
                     </RadioGroup>
 
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switch_hyper_managed"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/hyper_managed_label" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/hyper_managed_help"
+                        android:textAppearance="?attr/textAppearanceBodySmall" />
+
                     <TextView
                         android:id="@+id/probe_status"
                         android:layout_width="match_parent"
