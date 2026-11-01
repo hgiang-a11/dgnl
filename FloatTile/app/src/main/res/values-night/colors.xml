@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand">#9FA8DA</color>
+    <color name="brand_secondary">#80CBC4</color>
+    <color name="preview_screen">#263238</color>
+    <color name="preview_frame">#607D8B</color>
+    <color name="preview_window">#669FA8DA</color>
+    <color name="preview_text">#E8EAF6</color>
+    <color name="probe_background">#1A237E</color>
+</resources>

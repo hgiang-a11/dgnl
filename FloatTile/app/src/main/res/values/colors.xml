@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand">#3949AB</color>
+    <color name="brand_secondary">#00897B</color>
+    <color name="ic_launcher_background">#3949AB</color>
+    <color name="preview_screen">#ECEFF1</color>
+    <color name="preview_frame">#90A4AE</color>
+    <color name="preview_window">#553949AB</color>
+    <color name="preview_text">#1A237E</color>
+    <color name="probe_background">#E8EAF6</color>
+</resources>

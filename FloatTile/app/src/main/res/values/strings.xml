@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FloatTile</string>
+    <string name="tile_label">Claude nổi</string>
+    <string name="tile_subtitle_missing">Chưa chọn ứng dụng</string>
+
+    <string name="title_pick_app">Chọn ứng dụng đích</string>
+    <string name="title_diagnostics">Kiểm tra cửa sổ tự do</string>
+    <string name="title_shizuku">Shizuku</string>
+
+    <string name="probe_title">FloatTile – cửa sổ thử nghiệm</string>
+    <string name="probe_wait">Đang kiểm tra…</string>
+    <string name="probe_ok">✅ Đây là cửa sổ tự do</string>
+    <string name="probe_fail">❌ Hệ thống mở toàn màn hình</string>
+
+    <string name="version_format">Phiên bản %1$s</string>
+
+    <!-- Thẻ ứng dụng đích -->
+    <string name="section_target">Ứng dụng đích</string>
+    <string name="btn_pick_app">Chọn ứng dụng khác</string>
+    <string name="target_missing">Chưa tìm thấy ứng dụng</string>
+    <string name="target_missing_detail">Gói %1$s chưa được cài. Hãy bấm “Chọn ứng dụng khác”.</string>
+    <string name="target_hint">Mặc định là Claude (gói com.anthropic.claude). Danh sách chọn có ghi tên gói của từng ứng dụng để bạn đối chiếu.</string>
+
+    <!-- Thẻ kích thước -->
+    <string name="section_bounds">Kích thước và vị trí cửa sổ</string>
+    <string name="label_width">Chiều rộng: %1$d%% màn hình</string>
+    <string name="label_height">Chiều cao: %1$d%% màn hình</string>
+    <string name="label_pos_x">Vị trí ngang: %1$d%% (50 = giữa)</string>
+    <string name="label_pos_y">Vị trí dọc: %1$d%% (50 = giữa)</string>
+    <string name="bounds_format">Khung cửa sổ: %1$s\nMàn hình: %2$d×%3$d px</string>
+    <string name="btn_reset_bounds">Đặt lại mặc định</string>
+    <string name="btn_try_now">Mở thử ngay</string>
+
+    <!-- Thẻ cách mở -->
+    <string name="section_mode">Cách ép cửa sổ tự do</string>
+    <string name="mode_auto">Tự động (khuyên dùng): dùng cách đã kiểm tra là chạy được</string>
+    <string name="mode_reflection">Chỉ cách (a): gọi hàm ẩn qua reflection</string>
+    <string name="mode_shizuku">Chỉ cách (b): lệnh am start qua Shizuku</string>
+    <string name="mode_normal">Không ép: mở bình thường (để so sánh)</string>
+    <string name="probe_never">Chưa kiểm tra lần nào. Lần đầu bấm ô, FloatTile sẽ tự kiểm tra nhanh (một cửa sổ thử sẽ hiện lên chốc lát).</string>
+    <string name="probe_stale">(Kết quả đã cũ vì cài đặt máy vừa thay đổi, lần bấm tới sẽ kiểm tra lại.)</string>
+    <string name="probe_summary">Kiểm tra lúc %1$s\n• Cách (a) API ẩn: %2$s\n• Cách (b) Shizuku: %3$s</string>
+
+    <!-- Thẻ kiểm tra -->
+    <string name="section_check">Kiểm tra và Shizuku</string>
+    <string name="btn_diagnose">Kiểm tra cửa sổ tự do của máy</string>
+    <string name="btn_shizuku">Hướng dẫn và cấp quyền Shizuku</string>
+
+    <!-- Thẻ thêm ô -->
+    <string name="section_tile">Thêm ô vào bảng cài đặt nhanh</string>
+    <string name="btn_add_tile">Thêm ô ngay</string>
+    <string name="tile_help">Cách thêm thủ công trên HyperOS: vuốt từ góc trên bên phải xuống để mở Trung tâm điều khiển → bấm biểu tượng chỉnh sửa (hình bút chì hoặc ô vuông) → tìm ô “Claude nổi” → nhấn giữ và kéo vào vùng ô đang dùng → Xong.\nNhấn giữ ô sẽ mở lại màn hình này.</string>
+    <string name="add_tile_manual">Máy không hỗ trợ thêm tự động. Hãy thêm thủ công theo hướng dẫn bên dưới nút.</string>
+
+    <!-- Chọn ứng dụng -->
+    <string name="search_hint">Tìm theo tên hoặc tên gói</string>
+    <string name="picked_app">Đã chọn %1$s</string>
+    <string name="selected_mark">Đang chọn</string>
+
+    <!-- Kiểm tra -->
+    <string name="btn_run_again">Kiểm tra lại</string>
+    <string name="btn_copy">Chép báo cáo</string>
+    <string name="btn_dev_options">Mở Tùy chọn nhà phát triển</string>
+    <string name="btn_enable_freeform">Bật cửa sổ tự do bằng Shizuku</string>
+    <string name="diag_intro">Mỗi bước sẽ mở một cửa sổ thử nghiệm trong chốc lát rồi tự đóng. Đừng chạm vào màn hình cho tới khi xong.</string>
+
+    <!-- Shizuku -->
+    <string name="shizuku_what">Shizuku là ứng dụng mã nguồn mở. Sau khi được bật qua “Gỡ lỗi không dây”, nó cho phép FloatTile (khi bạn đồng ý) chạy lệnh với quyền giống như khi cắm máy tính dùng ADB (công cụ gỡ lỗi Android). FloatTile dùng quyền này để chạy lệnh am start --windowingMode 5 (mở ứng dụng ở chế độ cửa sổ tự do).</string>
+    <string name="shizuku_steps_title">Các bước</string>
+    <string name="shizuku_steps">1. Cài Shizuku (nút “Tải Shizuku” bên dưới).\n\n2. Vào Cài đặt → Thông tin điện thoại → bấm 7 lần vào “Phiên bản HyperOS” để bật Tùy chọn nhà phát triển (nếu chưa bật).\n\n3. Kết nối Wi-Fi (bắt buộc với cách gỡ lỗi không dây, không cần Internet). Vào Cài đặt → Cài đặt bổ sung → Tùy chọn nhà phát triển → bật “Gỡ lỗi không dây”.\n\n4. Mở Shizuku → mục “Khởi động qua Gỡ lỗi không dây” → bấm “Ghép nối” → làm theo hướng dẫn: mở “Gỡ lỗi không dây” → “Ghép nối thiết bị bằng mã ghép nối” → nhập mã 6 số vào thông báo của Shizuku.\n\n5. Quay lại Shizuku → bấm “Khởi động”. Dòng trạng thái báo “Shizuku đang chạy” là được.\n\n6. Quay lại đây → bấm “Cấp quyền Shizuku” → chọn “Cho phép mọi lúc”.\n\nLưu ý: sau mỗi lần khởi động lại máy, cần mở Shizuku và bấm Khởi động lại (trừ khi máy đã root).\nTrên HyperOS, nếu Shizuku báo lỗi khi khởi động, hãy bật thêm “Gỡ lỗi USB (Cài đặt bảo mật)” trong Tùy chọn nhà phát triển.</string>
+    <string name="shizuku_request_permission">Cấp quyền Shizuku</string>
+    <string name="shizuku_permission_granted">Đã cấp quyền</string>
+    <string name="btn_open_shizuku">Mở Shizuku</string>
+    <string name="btn_download_shizuku">Tải Shizuku</string>
+    <string name="btn_find_claude">Tìm tên gói Claude (pm list packages)</string>
+    <string name="btn_test_shell">Thử chạy lệnh (id)</string>
+    <string name="running_command">Đang chạy: %1$s…</string>
+</resources>

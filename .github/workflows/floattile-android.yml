@@ -1,0 +1,64 @@
+# Build ứng dụng Android FloatTile trên GitHub Actions (máy chủ build miễn phí của GitHub).
+# Mỗi lần có thay đổi trong thư mục FloatTile/, GitHub sẽ tự build file APK:
+#   - Tải về ở tab "Actions" → chọn lần chạy → mục "Artifacts" → FloatTile-apk
+#   - Đồng thời đăng lên mục "Releases" với tên "floattile-latest" để tải thẳng file .apk trên điện thoại.
+name: Build FloatTile APK
+
+on:
+  push:
+    paths:
+      - "FloatTile/**"
+      - ".github/workflows/floattile-android.yml"
+  pull_request:
+    paths:
+      - "FloatTile/**"
+  workflow_dispatch: # cho phép bấm chạy tay trong tab Actions
+
+permissions:
+  contents: write # cần để tạo bản phát hành (Release)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: FloatTile
+
+    steps:
+      - name: Lấy mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Chuẩn bị Gradle (có bộ nhớ đệm cho lần sau nhanh hơn)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace assembleRelease
+
+      - name: Đổi tên file APK
+        run: cp app/build/outputs/apk/release/app-release.apk FloatTile.apk
+
+      - name: Tải APK lên mục Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: FloatTile-apk
+          path: FloatTile/FloatTile.apk
+
+      - name: Đăng bản phát hành "floattile-latest"
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete floattile-latest --yes --cleanup-tag || true
+          gh release create floattile-latest FloatTile.apk \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "FloatTile – bản build mới nhất (#${{ github.run_number }})" \
+            --notes "Bản build tự động từ nhánh ${{ github.ref_name }}, commit ${{ github.sha }}. Tải file FloatTile.apk bên dưới và mở trên điện thoại để cài."
