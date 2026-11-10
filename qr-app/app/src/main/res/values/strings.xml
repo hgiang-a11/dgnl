@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tạo mã QR</string>
+    <string name="share_target_label">Tạo mã QR</string>
+</resources>
