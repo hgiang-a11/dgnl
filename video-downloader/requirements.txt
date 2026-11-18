@@ -1,0 +1,9 @@
+# Bộ tải video (hỗ trợ hơn 1000 trang). [default] kèm phần giải mã YouTube.
+yt-dlp[default]>=2026.10.26
+# Máy chủ web
+fastapi>=0.115
+uvicorn>=0.30
+# ffmpeg đi kèm (ghép hình + tiếng, đổi MP3) – dùng khi máy chưa cài ffmpeg
+imageio-ffmpeg>=0.5
+# Trình chạy JavaScript mà YouTube bắt buộc
+deno>=2.4
