@@ -8,7 +8,8 @@ Cách dùng rất đơn giản:
 2. Bấm **Tải** → ngay bên dưới hiện khung xem trước, có vòng tròn báo tiến độ.
 3. Video tạo xong sẽ phát được ngay trong khung. Bên dưới có nút **Tải về máy**.
 
-Ứng dụng chạy ngay trên máy tính của bạn: không quảng cáo, không giới hạn số lần tải.
+Ứng dụng chạy ngay trên máy của bạn: không quảng cáo, không giới hạn số lần tải.
+Có **hai bản**: bản máy tính (Windows / macOS / Linux, mục 1–6) và **bản điện thoại Android (APK, mục 7)**.
 
 ---
 
@@ -79,7 +80,46 @@ Chỉ làm vậy ở mạng nhà mình, không làm ở Wi-Fi công cộng.
 
 Video tải về được lưu tạm trong thư mục `downloads/` và **tự xóa sau 2 giờ** (hoặc khi mở lại ứng dụng) để không làm đầy ổ đĩa. Tệp bạn đã bấm **Tải về máy** nằm trong thư mục *Tải xuống (Downloads)* của trình duyệt, không bị xóa.
 
-## 7. Lưu ý bản quyền
+## 7. Bản điện thoại Android (APK)
+
+Bản Android chạy độc lập trên điện thoại, **không cần máy tính**. Bên trong đã có sẵn bộ tải yt-dlp, Python và ffmpeg.
+
+### Cài đặt
+
+1. Tải tệp **`TaiVideo-1.0.0-arm64.apk`** về điện thoại (dùng cho gần như mọi điện thoại từ năm 2017 trở lại đây).
+   Nếu máy báo *“Ứng dụng không tương thích”* (máy rất cũ), hãy dùng bản **`TaiVideo-1.0.0-armv7-may-cu.apk`**.
+2. Mở tệp vừa tải. Nếu điện thoại hỏi, hãy bật **“Cho phép cài ứng dụng từ nguồn này”**.
+3. Nếu Google Play Protect cảnh báo *“ứng dụng không rõ”* (vì ứng dụng không phát hành trên CH Play), bấm **Chi tiết → Vẫn cài đặt**.
+4. Lần mở đầu tiên mất vài giây để chuẩn bị bộ tải. Khi có mạng, ứng dụng tự cập nhật bộ tải lên bản mới nhất.
+
+Yêu cầu: Android 7.0 trở lên, trống khoảng 250 MB.
+
+### Cách dùng trên điện thoại
+
+- **Cách nhanh nhất:** trong YouTube, TikTok, Facebook… bấm **Chia sẻ → TảiVideo**. Ứng dụng tự mở và bắt đầu tải.
+- Hoặc mở TảiVideo, bấm nút **Dán** (biểu tượng bảng kẹp) rồi bấm **Tải**.
+- Xem thử video ngay trong ứng dụng. Ưng ý thì bấm **Lưu vào máy**:
+  video vào thư mục **Movies/TaiVideo** (hiện trong *Thư viện ảnh*), tệp MP3 vào **Music/TaiVideo**.
+- Nút **Chia sẻ** gửi thẳng video sang Zalo, Messenger…
+- Có thể chuyển sang ứng dụng khác trong lúc tải; thanh thông báo hiện tiến độ và báo khi xong.
+
+Giới hạn hiện tại: bản điện thoại chỉ tải được **video công khai**. Video cần đăng nhập hãy dùng bản máy tính kèm `cookies.txt` (mục 4).
+
+### Tự đóng gói APK (dành cho người lập trình)
+
+Cần JDK 17 trở lên và Android SDK (nền tảng 35, build-tools 35.0.1):
+
+```
+cd video-downloader/android
+./gradlew assembleRelease          # Windows: gradlew.bat assembleRelease
+```
+
+Tệp APK nằm trong `android/app/build/outputs/apk/release/`. Giao diện dùng chung thư mục `static/` với bản máy tính.
+
+- Muốn ký bằng khóa riêng, tạo tệp `android/keystore.properties` gồm `storeFile`, `storePassword`, `keyAlias`, `keyPassword`. Nếu không có tệp này, APK được ký bằng khóa thử nghiệm (debug). Khi đó, muốn cài một bản đóng gói ở máy khác thì có thể phải gỡ bản cũ trước.
+- Kiểm thử: `./gradlew testReleaseUnitTest`. Đặt thêm biến `TV_YTDLP` (đường dẫn tới yt-dlp) và `TV_MEDIA_BASE` (địa chỉ máy chủ có video mẫu) để chạy cả phần thử tải thật.
+
+## 8. Lưu ý bản quyền
 
 Chỉ tải video của chính bạn, video được phép tải lại, hoặc để xem cá nhân. Không đăng lại hay dùng cho mục đích thương mại khi chưa được tác giả cho phép.
 
@@ -92,7 +132,8 @@ video-downloader/
 ├── app.py            # Máy chủ: nhận link, gọi yt-dlp để tải, trả video về trình duyệt
 ├── requirements.txt  # Danh sách thư viện Python cần cài
 ├── run.bat / run.sh  # Tệp mở nhanh cho Windows / macOS-Linux
-└── static/           # Giao diện: index.html, style.css, app.js
+├── static/           # Giao diện dùng chung: index.html, style.css, app.js
+└── android/          # Bản Android (Kotlin): khung hiển thị giao diện + máy chủ nội bộ + yt-dlp
 ```
 
 Có thể đổi một số thiết lập bằng biến môi trường (environment variable – giá trị cài đặt đặt trước khi chạy):

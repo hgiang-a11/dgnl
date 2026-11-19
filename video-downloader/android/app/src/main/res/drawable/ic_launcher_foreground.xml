@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Mũi tên tải xuống + gạch chân, nằm trong vùng an toàn 66dp ở giữa -->
+    <path
+        android:pathData="M54,34 L54,62 M42,51 L54,63 L66,51 M40,73 L68,73"
+        android:strokeWidth="6.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

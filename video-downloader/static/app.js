@@ -15,7 +15,13 @@
     download: $("#downloadBtn"), fileText: $("#fileText"),
     retry: $("#retryBtn"), copy: $("#copyBtn"), again: $("#newBtn"), cancel: $("#cancelBtn"),
     theme: $("#themeBtn"), toast: $("#toast"), engine: $("#engine"),
+    share: $("#shareBtn"), downloadLabel: $("#downloadLabel"),
   };
+
+  // Khi chạy trong ứng dụng Android, phần mã gốc (Kotlin) cung cấp window.TaiVideoApp.
+  const NATIVE = window.TaiVideoApp || null;
+  const IS_APP = !!NATIVE;
+  if (IS_APP) document.documentElement.classList.add("is-app");
 
   const RING_LEN = 2 * Math.PI * 52;
   const QUALITY_KEY = "quality";
@@ -135,7 +141,9 @@
     try {
       res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
     } catch {
-      throw new Error("Không kết nối được tới ứng dụng. Hãy chắc chắn cửa sổ chạy run.bat / run.sh vẫn đang mở.");
+      throw new Error(IS_APP
+        ? "Ứng dụng vừa bị hệ thống tạm dừng. Hãy đóng hẳn ứng dụng rồi mở lại."
+        : "Không kết nối được tới ứng dụng. Hãy chắc chắn cửa sổ chạy run.bat / run.sh vẫn đang mở.");
     }
     let data = null;
     try { data = await res.json(); } catch { /* bỏ qua */ }
@@ -184,6 +192,7 @@
     els.download.hidden = true;
     els.retry.hidden = true;
     els.copy.hidden = true;
+    els.share.hidden = true;
     els.again.hidden = true;
     els.cancel.hidden = false;
   }
@@ -227,6 +236,7 @@
     resetResult();
     els.result.hidden = false;
     setBusy(true);
+    if (IS_APP) { try { NATIVE.onDownloadStarted(); } catch {} }
     requestAnimationFrame(() => els.result.scrollIntoView({ behavior: "smooth", block: "center" }));
 
     try {
@@ -267,11 +277,13 @@
 
     const pct = j.progress || 0;
     switch (j.state) {
-      case "queued":
-        els.stageMsg.textContent = "Đang chờ đến lượt…";
-        els.stageSub.textContent = "Đang có video khác được xử lý";
+      case "queued": {
+        const msg = j.message || "Đang chờ đến lượt…";
+        els.stageMsg.textContent = msg;
+        els.stageSub.textContent = /khởi động/i.test(msg) ? "Chỉ chậm ở lần mở đầu tiên" : "Đang có video khác được xử lý";
         setRing(null);
         break;
+      }
       case "analyzing":
         els.stageMsg.textContent = "Đang phân tích link…";
         els.stageSub.textContent = "Tìm video và chất lượng tốt nhất";
@@ -375,8 +387,9 @@
     els.fileText.textContent = [f.ext.toUpperCase(), qualityLabel(f), fmtBytes(f.size)].filter(Boolean).join(" · ");
     els.download.hidden = false;
     els.copy.hidden = false;
+    els.share.hidden = !IS_APP;
     els.again.hidden = false;
-    toast("Video đã sẵn sàng! Xem thử rồi bấm “Tải về máy”.");
+    toast(`Video đã sẵn sàng! Xem thử rồi bấm “${els.downloadLabel.textContent}”.`);
   }
 
   function renderError(j) {
@@ -410,7 +423,7 @@
 
   els.paste.addEventListener("click", async () => {
     try {
-      const text = await navigator.clipboard.readText();
+      const text = IS_APP ? String(NATIVE.readClipboard() || "") : await navigator.clipboard.readText();
       if (!text.trim()) { toast("Bộ nhớ tạm đang trống."); return; }
       els.url.value = extractUrl(text);
       updateDetected();
@@ -449,20 +462,50 @@
 
   els.copy.addEventListener("click", async () => {
     const link = (job && job.info && job.info.webpage_url) || (job && job.url) || "";
-    try { await navigator.clipboard.writeText(link); toast("Đã sao chép link gốc"); }
-    catch { toast(link); }
+    try {
+      if (IS_APP) NATIVE.copyText(link); else await navigator.clipboard.writeText(link);
+      toast("Đã sao chép link gốc");
+    } catch { toast(link); }
   });
 
-  els.download.addEventListener("click", () => toast("Đang lưu vào thư mục Tải xuống…"));
+  els.download.addEventListener("click", (e) => {
+    if (IS_APP) {
+      // Trong ứng dụng: lưu thẳng vào Thư viện của điện thoại.
+      e.preventDefault();
+      if (job && job.id) { NATIVE.save(job.id); toast("Đang lưu vào máy…"); }
+      return;
+    }
+    toast("Đang lưu vào thư mục Tải xuống…");
+  });
+
+  els.share.addEventListener("click", () => { if (IS_APP && job && job.id) NATIVE.share(job.id); });
 
   // Giao diện sáng / tối
+  function isDark() {
+    const t = document.documentElement.dataset.theme;
+    return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  function syncTheme() {
+    if (IS_APP) { try { NATIVE.setDarkMode(isDark()); } catch {} }
+  }
   els.theme.addEventListener("click", () => {
-    const root = document.documentElement;
-    const current = root.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    const next = current === "dark" ? "light" : "dark";
-    root.dataset.theme = next;
+    const next = isDark() ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
     try { localStorage.setItem("theme", next); } catch {}
+    syncTheme();
   });
+  try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncTheme); } catch {}
+
+  // Các hàm phần mã Android gọi vào.
+  window.taiVideoSyncTheme = syncTheme;
+  window.taiVideoStart = (url) => {
+    els.url.value = extractUrl(url);
+    updateDetected();
+    start();
+  };
+  window.__tvNative = (event, data) => {
+    if (event === "saved") toast(data && data.message ? data.message : (data && data.ok ? "Đã lưu" : "Không lưu được"));
+  };
 
   /* ---------- Khởi tạo ---------- */
   $("#year").textContent = new Date().getFullYear();
@@ -471,14 +514,27 @@
     if (q && [...els.quality.options].some((o) => o.value === q)) els.quality.value = q;
   } catch {}
 
-  const params = new URLSearchParams(location.search);
-  if (params.get("url")) { els.url.value = params.get("url"); }
-  updateDetected();
-  if (params.get("url")) start();
+  if (IS_APP) {
+    els.downloadLabel.textContent = "Lưu vào máy";
+    syncTheme();
+  }
 
-  api("/api/health").then((h) => {
-    els.engine.textContent = `Bộ tải: yt-dlp ${h.yt_dlp}${h.ffmpeg ? "" : " · thiếu ffmpeg"}`;
-  }).catch(() => {
+  const params = new URLSearchParams(location.search);
+  const sharedUrl = params.get("url");
+  if (sharedUrl) {
+    els.url.value = sharedUrl;
+    // xóa ?url=... khỏi thanh địa chỉ để tải lại trang không bắt đầu tải lần nữa
+    try { history.replaceState(null, "", location.pathname); } catch {}
+  }
+  updateDetected();
+  if (sharedUrl) start();
+
+  function showEngine(h) {
+    const ver = h.ready === false ? "đang khởi động…" : `yt-dlp ${h.yt_dlp}`;
+    els.engine.textContent = `Bộ tải: ${ver}${h.ffmpeg ? "" : " · thiếu ffmpeg"}${h.app && h.version ? ` · Ứng dụng ${h.version}` : ""}`;
+    if (h.ready === false || h.updating) setTimeout(() => api("/api/health").then(showEngine).catch(() => {}), 3000);
+  }
+  api("/api/health").then(showEngine).catch(() => {
     els.engine.textContent = "Chưa kết nối máy chủ";
     if (location.protocol === "file:") {
       setHint("Bạn đang mở tệp trực tiếp. Hãy chạy <b>run.bat</b> (Windows) hoặc <b>run.sh</b> (Mac/Linux) để dùng ứng dụng.", true);

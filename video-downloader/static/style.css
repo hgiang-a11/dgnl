@@ -90,6 +90,9 @@ img { max-width: 100%; display: block; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 [hidden] { display: none !important; }
+/* Nội dung chỉ dành cho bản web hoặc bản ứng dụng Android */
+:root.is-app [data-web-only] { display: none !important; }
+:root:not(.is-app) [data-app-only] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .wrap { width: 100%; max-width: var(--wrap); margin: 0 auto; padding: 0 20px; }
 .wrap.narrow { max-width: 780px; }
@@ -104,6 +107,7 @@ code { font-size: .9em; padding: 1px 6px; border-radius: 6px; background: var(--
 /* ============ Thanh trên cùng ============ */
 .topbar {
   position: sticky; top: 0; z-index: 50;
+  background: var(--bg); /* dự phòng cho trình duyệt cũ */
   background: color-mix(in srgb, var(--bg) 78%, transparent);
   backdrop-filter: saturate(160%) blur(14px);
   -webkit-backdrop-filter: saturate(160%) blur(14px);
@@ -202,7 +206,7 @@ h1 {
   font-weight: 600; font-size: .95rem; cursor: pointer;
 }
 .select select:hover { border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
-.select-chev { position: absolute; right: 14px; top: 50%; translate: 0 -50%; color: var(--muted); pointer-events: none; }
+.select-chev { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .form-hint { margin: 14px 0 0; font-size: .88rem; color: var(--faint); }
 .form-hint.error { color: var(--danger); font-weight: 500; }
 
@@ -385,12 +389,12 @@ h1 {
 .engine { font-variant-numeric: tabular-nums; }
 
 .toast {
-  position: fixed; left: 50%; bottom: 24px; z-index: 100; translate: -50% 20px;
+  position: fixed; left: 50%; bottom: 24px; z-index: 100; transform: translate(-50%, 20px);
   max-width: calc(100vw - 32px); padding: 12px 18px; border-radius: 14px;
   background: #151827; color: #fff; font-size: .93rem; font-weight: 500; box-shadow: var(--shadow-lg);
-  opacity: 0; pointer-events: none; transition: opacity .2s, translate .2s;
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
 }
-.toast.show { opacity: 1; translate: -50% 0; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* ============ Màn hình nhỏ ============ */
 @media (max-width: 760px) {

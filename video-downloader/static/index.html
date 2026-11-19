@@ -30,6 +30,7 @@
     <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></g></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.6 2.8 3.8 6 3.8 9.5s-1.2 6.7-3.8 9.5c-2.6-2.8-3.8-6-3.8-9.5S9.4 5.3 12 2.5Z"/></g></symbol>
     <symbol id="i-music" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></g></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></g></symbol>
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <!-- Biểu tượng nền tảng (vẽ giản lược) -->
     <symbol id="p-youtube" viewBox="0 0 24 24"><rect x="1.5" y="5" width="21" height="14" rx="4.5" fill="#FF0033"/><path d="M10 9v6l5.2-3z" fill="#fff"/></symbol>
@@ -100,7 +101,7 @@
             </button>
           </div>
         </form>
-        <p class="form-hint" id="formHint">Mẹo: nhấn <kbd>Ctrl</kbd> + <kbd>V</kbd> để dán, rồi <kbd>Enter</kbd> để tải.</p>
+        <p class="form-hint" id="formHint" data-web-only>Mẹo: nhấn <kbd>Ctrl</kbd> + <kbd>V</kbd> để dán, rồi <kbd>Enter</kbd> để tải.</p>
 
         <!-- Kết quả: xem trước + nút tải về -->
         <section class="result" id="result" hidden aria-live="polite">
@@ -143,9 +144,10 @@
               <div class="actions" id="actions">
                 <a class="btn btn-primary btn-lg" id="downloadBtn" href="#" download hidden>
                   <svg class="btn-ico"><use href="#i-download"/></svg>
-                  <span class="btn-stack"><span>Tải về máy</span><small id="fileText">MP4</small></span>
+                  <span class="btn-stack"><span id="downloadLabel">Tải về máy</span><small id="fileText">MP4</small></span>
                 </a>
                 <button type="button" class="btn btn-soft" id="retryBtn" hidden><svg class="btn-ico"><use href="#i-refresh"/></svg><span>Thử lại</span></button>
+                <button type="button" class="btn btn-soft" id="shareBtn" hidden data-app-only><svg class="btn-ico"><use href="#i-share"/></svg><span>Chia sẻ</span></button>
                 <button type="button" class="btn btn-ghost" id="copyBtn" hidden><svg class="btn-ico"><use href="#i-copy"/></svg><span>Sao chép link gốc</span></button>
                 <button type="button" class="btn btn-ghost" id="newBtn" hidden><svg class="btn-ico"><use href="#i-link"/></svg><span>Tải video khác</span></button>
                 <button type="button" class="btn btn-ghost" id="cancelBtn"><svg class="btn-ico"><use href="#i-x"/></svg><span>Hủy</span></button>
@@ -190,7 +192,7 @@
           <li>
             <span class="step-num">3</span>
             <h3>Xem trước và lưu về</h3>
-            <p>Video hiện ngay để bạn xem thử. Ưng ý thì bấm <b>Tải về máy</b> là xong.</p>
+            <p>Video hiện ngay để bạn xem thử. Ưng ý thì bấm <b data-web-only>Tải về máy</b><b data-app-only>Lưu vào máy</b> là xong.</p>
           </li>
         </ol>
 
@@ -198,7 +200,7 @@
           <div class="feature"><span class="f-ico">4K</span><div><h3>Chất lượng cao</h3><p>Lấy bản đẹp nhất có sẵn, tới 4K. Tự ghép hình và tiếng thành một tệp MP4.</p></div></div>
           <div class="feature"><span class="f-ico"><svg><use href="#i-check"/></svg></span><div><h3>Xem trước khi tải</h3><p>Phát thử ngay trên trang, chắc chắn đúng video rồi mới lưu.</p></div></div>
           <div class="feature"><span class="f-ico"><svg><use href="#i-music"/></svg></span><div><h3>Tách nhạc MP3</h3><p>Chọn “Chỉ âm thanh MP3” để lấy riêng phần tiếng của video.</p></div></div>
-          <div class="feature"><span class="f-ico"><svg><use href="#i-globe"/></svg></span><div><h3>Chạy trên máy bạn</h3><p>Không qua máy chủ lạ, không quảng cáo, không giới hạn số lần tải.</p></div></div>
+          <div class="feature"><span class="f-ico"><svg><use href="#i-globe"/></svg></span><div><h3 data-web-only>Chạy trên máy bạn</h3><h3 data-app-only>Chạy ngay trên điện thoại</h3><p>Không qua máy chủ lạ, không quảng cáo, không giới hạn số lần tải.</p></div></div>
         </div>
       </div>
     </section>
@@ -209,11 +211,17 @@
         <div class="faq">
           <details>
             <summary>Video tải về được lưu ở đâu?<svg><use href="#i-chev"/></svg></summary>
-            <p>Khi bấm <b>Tải về máy</b>, trình duyệt sẽ lưu tệp vào thư mục <b>Tải xuống (Downloads)</b> như mọi tệp khác.</p>
+            <p data-web-only>Khi bấm <b>Tải về máy</b>, trình duyệt sẽ lưu tệp vào thư mục <b>Tải xuống (Downloads)</b> như mọi tệp khác.</p>
+            <p data-app-only>Khi bấm <b>Lưu vào máy</b>, video được lưu vào thư mục <b>Movies/TaiVideo</b> và hiện trong <b>Thư viện ảnh</b>. Tệp MP3 nằm ở <b>Music/TaiVideo</b>.</p>
           </details>
           <details>
             <summary>Vì sao một số video Facebook/Instagram báo cần đăng nhập?<svg><use href="#i-chev"/></svg></summary>
-            <p>Video ở chế độ riêng tư, trong nhóm kín hoặc tài khoản khóa chỉ người đã đăng nhập mới xem được. Bạn có thể xuất tệp <code>cookies.txt</code> từ trình duyệt và đặt vào thư mục ứng dụng (xem hướng dẫn trong README).</p>
+            <p data-web-only>Video ở chế độ riêng tư, trong nhóm kín hoặc tài khoản khóa chỉ người đã đăng nhập mới xem được. Bạn có thể xuất tệp <code>cookies.txt</code> từ trình duyệt và đặt vào thư mục ứng dụng (xem hướng dẫn trong README).</p>
+            <p data-app-only>Video ở chế độ riêng tư, trong nhóm kín hoặc tài khoản khóa chỉ người đã đăng nhập mới xem được. Bản điện thoại hiện chỉ tải được video công khai; video cần đăng nhập hãy dùng bản máy tính kèm tệp <code>cookies.txt</code>.</p>
+          </details>
+          <details data-app-only>
+            <summary>Có cách nào nhanh hơn dán link không?<svg><use href="#i-chev"/></svg></summary>
+            <p>Có. Trong YouTube, TikTok, Facebook… bấm <b>Chia sẻ</b> rồi chọn <b>TảiVideo</b>. Ứng dụng sẽ tự mở và bắt đầu tải ngay.</p>
           </details>
           <details>
             <summary>Nên chọn chất lượng nào?<svg><use href="#i-chev"/></svg></summary>
@@ -221,7 +229,8 @@
           </details>
           <details>
             <summary>Một link trước đây tải được, giờ lại lỗi?<svg><use href="#i-chev"/></svg></summary>
-            <p>Các trang video thay đổi thường xuyên. Hãy tắt rồi mở lại ứng dụng bằng <code>run.bat</code> / <code>run.sh</code> – bộ tải sẽ tự cập nhật lên bản mới nhất.</p>
+            <p data-web-only>Các trang video thay đổi thường xuyên. Hãy tắt rồi mở lại ứng dụng bằng <code>run.bat</code> / <code>run.sh</code> – bộ tải sẽ tự cập nhật lên bản mới nhất.</p>
+            <p data-app-only>Các trang video thay đổi thường xuyên. Ứng dụng tự cập nhật bộ tải mỗi khi mở (cần có mạng). Hãy đóng hẳn ứng dụng rồi mở lại sau ít phút.</p>
           </details>
           <details>
             <summary>Tải video có hợp pháp không?<svg><use href="#i-chev"/></svg></summary>
